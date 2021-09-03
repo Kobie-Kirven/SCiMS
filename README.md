@@ -3,6 +3,8 @@
 Requirements:
 - bwa
 - bowtie2
+- Flash
+- Samtools
 
 Modules:
 
@@ -11,6 +13,6 @@ build-index:
 
 Installation:
 ```bash
-pip3 install git+https://github.com/kyle-mcgovern/metagenome-sex-calling-pipeline/tree/development
+pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 
 ```
