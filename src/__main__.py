@@ -113,5 +113,10 @@ def scims():
     elif args.command == "determine-sex":
         sample = GetProportion(args.index, args.forward, args.reverse, args.threads)
         sample.getHumanSequences()
-        sample.getSexSequences(args.homogametic,args.heterogametic)
+        sample.getSexSequences(args.homogametic,args.heterogametic,"reads.sam")
         sample.getFastqReadsInSam()
+        sample.mergeWithFlash()
+        sample.alignWithBowtie2(input1="flash.extendedFrags.fastq", merged=True)
+        sample.alignWithBowtie2(input1="flash.notCombined_1.fastq", input2="flash.notCombined_2.fastq",
+         merged=False)
+

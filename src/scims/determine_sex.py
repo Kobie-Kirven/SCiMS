@@ -25,12 +25,12 @@ class GetProportion:
 			" | samtools view -F 4 -F 8 -b -o temp.bam", shell=True)
 
 
-	def getSexSequences(self, homogamete, heterogamete):
+	def getSexSequences(self, homogamete, heterogamete, outFile):
 		# Find 
 		subprocess.call("samtools view -F 2048 -F 256 temp.bam"  + 
 			" | awk '$5 < 50 && ($3 ==" + '"' + homogamete + '"' + 
 			"|| $3 ==" + '"' + heterogamete + '"' + 
-			") && ($9 > 75 || $9 < -75) {print}' > reads.sam", shell=True)
+			") && ($9 > 75 || $9 < -75) {print}' > " + outFile, shell=True)
 
 	def getFastqReadsInSam(self):
 		#Get the unique sequence names from the SAM file
@@ -52,15 +52,39 @@ class GetProportion:
 
 		else:
 			for rec1 in SeqIO.parse(self.forward, fileType):
-				print(str(rec1.id)[1:-2].split(" ")[0])
-				if str(rec1.id)[1:-2].split(" ")[0] in readIds:
+				if str(rec1.id) in readIds:
 					SeqIO.write(rec1,outFastq1,fileType)
-					print(rec)
+
 			for rec2 in SeqIO.parse(self.reverse, fileType):
+				if str(rec2.id) in readIds:
 					SeqIO.write(rec2,outFastq2,fileType)
 
 		outFastq1.close()
 		outFastq2.close()
+
+	def mergeWithFlash(self):
+		#Merge paired-end reads with flash
+		subprocess.call( "flash -x .1 -M 150 -m 40 " + 
+			"align1.fastq align2.fastq -o flash", shell=True)
+
+	def alignWithBowtie2(self, merged, input1, input2=None):
+		#Align reads with bowtie2
+		if merged == True:
+			subprocess.call("bowtie2 -p " + self.threads +  
+				" -k 50 --local -x " +  self.index + 
+				" -U " + input1 + " > bowtie2_merged.sam", shell=True)
+		
+		elif merged == False:
+			subprocess.call("bowtie2 -p " + self.threads +  
+				" -k 50 --local -x " + self.index + 
+				" -1 " + input1 + " -2 " + input2 + 
+				" > bowtie2_unmerged.sam", shell=True)
+
+	# def bowtie2ReadRescue():
+
+
+
+
 
 
 
