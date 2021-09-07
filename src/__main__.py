@@ -5,7 +5,8 @@
 
 # imports
 import argparse
-from .scims import BuildIndex
+from .scims import (BuildIndex,TestFile)
+from .scims.determine_sex import GetProportion
 
 
 def scims():
@@ -24,8 +25,7 @@ def scims():
     #######################################
     build_index_parser = subparser.add_parser(
         "build-index",
-        help="get sequences of assembled chromosomes",
-        description="Get the FASTA file of assembled chromosomes.",
+        help="Build indexes for bwa and bowtie2",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -50,6 +50,57 @@ def scims():
     build_index_parser.add_argument(
         "-o", "--output", dest="output", help="Name of output index"
     )
+
+    ######################################
+    # determine-sex
+    ######################################
+    determine_sex_parser = subparser.add_parser(
+        "determine-sex",
+        help="determine sex of sample",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+
+    determine_sex_parser.add_argument(
+        "-i",
+        "--index-name",
+        dest="index",
+        help="Name of bowtie2 and bwa index",
+    )
+
+    determine_sex_parser.add_argument(
+        "-1",
+        "--forward-reads",
+        dest="forward",
+        help="Forward reads in fasta or fastq format",
+    )
+
+    determine_sex_parser.add_argument(
+        "-2",
+        "--reverse-reads",
+        dest="reverse",
+        help="Reverse reads in fasta or fastq format",
+    )
+
+    determine_sex_parser.add_argument(
+        "-t",
+        "--number-of-threads",
+        dest="threads",
+        help="Number of threads to use",
+    )
+
+    determine_sex_parser.add_argument(
+        "-hom",
+        "--homogametic",
+        dest="homogametic",
+        help="ID of homogametic sex chromesome (ex. X)",
+    )
+    determine_sex_parser.add_argument(
+        "-het",
+        "--heterogametic",
+        dest="heterogametic",
+        help="ID of heterogametic sex chromesome (ex. Y)",)
+
+
     args = parser.parse_args()
 
     if args.command == "build-index":
@@ -58,3 +109,9 @@ def scims():
         )
         index.buildBwaIndex()
         index.buildBowtie2Index()
+
+    elif args.command == "determine-sex":
+        sample = GetProportion(args.index, args.forward, args.reverse, args.threads)
+        sample.getHumanSequences()
+        sample.getSexSequences(args.homogametic,args.heterogametic)
+        sample.getFastqReadsInSam()

@@ -6,6 +6,36 @@ from Bio import SeqIO
 import gzip
 import os
 
+class TestFile:
+
+    def isFileZip(fileName):
+        '''Check if the file is gzipped'''
+        if fileName[-3:] == ".gz":
+            return True
+        else:
+            return False
+
+    def fastaOrFastq(fileName):
+        # Check if the input file is fasta or fastq
+        if TestFile.isFileZip(fileName) == True:
+            with gzip.open(fileName, "rb") as fn:
+                line = fn.readline()
+                if str(line)[2:].startswith("@"):
+                    return "fastq"
+                elif str(line)[2:].startswith(">"):
+                    return "fasta"
+                else:
+                    raise IOError
+        else:
+            with open(fileName) as fn:
+                line = fn.readline()
+                if line.startswith("@"):
+                    return "fastq"
+                elif line.startswith(">"):
+                    return "fasta"
+                else:
+                    raise IOError
+
 
 class BuildIndex:
     """Class for building bwa and bowtie2 indexes"""
@@ -16,46 +46,19 @@ class BuildIndex:
         self.hetero = heterogamete
         self.output = output
 
-    def isFileZip(self):
-        # Check if the file is gzipped
-        if self.reference[-3:] == ".gz":
-            return True
-        else:
-            return False
-
-    def testFileType(self):
-        # Check if the input file is fasta or fastq
-        if BuildIndex.isFileZip(self) == True:
-            with gzip.open(self.reference, "rb") as fn:
-                line = fn.readline()
-                if str(line)[2:].startswith("@"):
-                    return "fastq"
-                elif str(line)[2:].startswith(">"):
-                    return "fasta"
-                else:
-                    raise IOError
-        else:
-            with open(self.reference) as fn:
-                line = fn.readline()
-                if line.startswith("@"):
-                    return "fastq"
-                elif line.startswith(">"):
-                    return "fasta"
-                else:
-                    raise IOError
 
     def getSexChromosomes(self):
         # Extract the sex chromosomes from the reference genome
         # and output them into a fasta file
         outputFile = open(self.output + ".fasta", "w")
 
-        if BuildIndex.isFileZip(self) == True:
+        if TestFile.isFileZip(self.reference) == True:
             with gzip.open(self.reference, "rt") as handle:
-                for rec in SeqIO.parse(handle, BuildIndex.testFileType(self)):
+                for rec in SeqIO.parse(handle, TestFile.fastaOrFastq(self.reference)):
                     if rec.id == self.homo or rec.id == self.hetero:
                         SeqIO.write(rec, outputFile, "fasta")
         else:
-            for rec in SeqIO.parse(self.reference, BuildIndex.testFileType(self)):
+            for rec in SeqIO.parse(self.reference, TestFile.fastaOrFastq(self)):
                 if rec.id == self.homo or rec.id == self.hetero:
                     SeqIO.write(rec, outputFile, "fasta")
         return self.output + ".fasta"
