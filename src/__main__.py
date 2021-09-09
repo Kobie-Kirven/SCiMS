@@ -5,7 +5,7 @@
 
 # imports
 import argparse
-from .scims import (BuildIndex,TestFile)
+from .scims import BuildIndex, TestFile
 from .scims.determine_sex import GetProportion
 
 
@@ -98,8 +98,8 @@ def scims():
         "-het",
         "--heterogametic",
         dest="heterogametic",
-        help="ID of heterogametic sex chromesome (ex. Y)",)
-
+        help="ID of heterogametic sex chromesome (ex. Y)",
+    )
 
     args = parser.parse_args()
 
@@ -113,10 +113,12 @@ def scims():
     elif args.command == "determine-sex":
         sample = GetProportion(args.index, args.forward, args.reverse, args.threads)
         sample.getHumanSequences()
-        sample.getSexSequences(args.homogametic,args.heterogametic,"reads.sam")
+        sample.getSexSequences(args.homogametic, args.heterogametic, "reads.sam")
         sample.getFastqReadsInSam()
         sample.mergeWithFlash()
         sample.alignWithBowtie2(input1="flash.extendedFrags.fastq", merged=True)
-        sample.alignWithBowtie2(input1="flash.notCombined_1.fastq", input2="flash.notCombined_2.fastq",
-         merged=False)
-
+        sample.alignWithBowtie2(
+            input1="flash.notCombined_1.fastq",
+            input2="flash.notCombined_2.fastq",
+            merged=False,
+        )

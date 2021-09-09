@@ -6,10 +6,10 @@ from Bio import SeqIO
 import gzip
 import os
 
-class TestFile:
 
+class TestFile:
     def isFileZip(fileName):
-        '''Check if the file is gzipped'''
+        """Check if the file is gzipped"""
         if fileName[-3:] == ".gz":
             return True
         else:
@@ -45,7 +45,6 @@ class BuildIndex:
         self.homo = homogamete
         self.hetero = heterogamete
         self.output = output
-
 
     def getSexChromosomes(self):
         # Extract the sex chromosomes from the reference genome
