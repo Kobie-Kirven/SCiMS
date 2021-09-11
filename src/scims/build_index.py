@@ -5,36 +5,46 @@
 from Bio import SeqIO
 import gzip
 import os
+import unittest
+
+class TestIndex(unittest.TestCase):
+
+    def test_isFileGzip(self):
+        self.assertFalse(isFileGzip(""))
+        self.assertFalse(isFileGzip("foo"))
+        self.assertTrue(isFileGzip("foo.gz"))
 
 
-class TestFile:
-    def isFileZip(fileName):
-        """Check if the file is gzipped"""
-        if fileName[-3:] == ".gz":
-            return True
-        else:
-            return False
+def isFileGzip(fileName):
+    """
+    Inputs a file name and returns a boolean 
+    of if the input file is gzipped
+    """
+    if fileName[-3:] == ".gz":
+        return True
+    else:
+        return False
 
-    def fastaOrFastq(fileName):
-        # Check if the input file is fasta or fastq
-        if TestFile.isFileZip(fileName) == True:
-            with gzip.open(fileName, "rb") as fn:
-                line = fn.readline()
-                if str(line)[2:].startswith("@"):
-                    return "fastq"
-                elif str(line)[2:].startswith(">"):
-                    return "fasta"
-                else:
-                    raise IOError
-        else:
-            with open(fileName) as fn:
-                line = fn.readline()
-                if line.startswith("@"):
-                    return "fastq"
-                elif line.startswith(">"):
-                    return "fasta"
-                else:
-                    raise IOError
+def fastaOrFastq(fileName):
+    # Check if the input file is fasta or fastq
+    if TestFile.isFileZip(fileName) == True:
+        with gzip.open(fileName, "rb") as fn:
+            line = fn.readline()
+            if str(line)[2:].startswith("@"):
+                return "fastq"
+            elif str(line)[2:].startswith(">"):
+                return "fasta"
+            else:
+                raise IOError
+    else:
+        with open(fileName) as fn:
+            line = fn.readline()
+            if line.startswith("@"):
+                return "fastq"
+            elif line.startswith(">"):
+                return "fasta"
+            else:
+                raise IOError
 
 
 class BuildIndex:

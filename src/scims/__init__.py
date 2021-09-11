@@ -4,3 +4,4 @@
 
 from .build_index import BuildIndex, TestFile
 from .determine_sex import GetProportion
+from .sam_files import *
