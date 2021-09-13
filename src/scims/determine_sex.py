@@ -129,47 +129,87 @@ def mergeWithFlash(pair1, pair2, mismatchRatio=0.1, maxOverlap=150, minOverlap=4
     tempdir = tempfile.TemporaryDirectory()
     subprocess.run(["flash", "-x",str(mismatchRatio), "-M", str(maxOverlap),"-m", str(minOverlap),
         pair1, pair2, "-d", tempdir.name])
-    return tempdir
+    merged = convertToTemp(tempdir.name + "out.extendedFrags.fastq")
+    unmerged1 = convertToTemp(tempdir.name + "out.notCombined_1.fastq")
+    unmerged2 = convertToTemp(tempdir.name + "out.notCombined_2.fastq")
+    return merged, unmerged1, unmerged2
+
+def convertToTemp(oldFile):
+    with open(oldFile) as fn:
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            for line in fn:
+                f.wirte(line.encode)
+            return f.name
 
 def alignMergedWithBowtie2(index, merged, threads=1, noOfAlignPerRead=50):
-"""Align merged reads with bowtie2"""
-with tempfile.NamedTemporaryFile(delete=False) as f:
-    subprocess.run(["bowtie2","-p",threads,"-k", noOfAlignPerRead,"--local",
-        "-x", index, "-U", merged], stdout=f)
-    tempFilesList(f.name)
-    return f.name
+    """Align merged reads with bowtie2"""
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        subprocess.run(["bowtie2","-p",str(threads),"-k", str(noOfAlignPerRead),"--local",
+            "-x", index, "-U", merged], stdout=f)
+        tempFilesList(f.name)
+        return f.name
 
 def pairedReadsWithBowtie2(index, forwardReads, reverseReads, threads=1, noOfAlignPerRead=50):
     """Align paired reads with bowtie2"""
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        subprocess.run(["bowtie2","-p",threads,"-k", noOfAlignPerRead,"--local",
+        subprocess.run(["bowtie2","-p",str(threads),"-k", str(noOfAlignPerRead),"--local",
             "-x", index, "-1", forwardReads, "-2", reverseReads], stdout=f)
-        return f.name
+        return f.name`
 
-def bowtie2ReadRescue(mergedSam, unmergedSam, diffFromMaxPercent=0.025):
 
-    fastqData = {}
-    for rec in ParseSam(mergedSam):
+def getReadDataFromMergedSam(samFile):
+    fastqData = []
+    for rec in ParseSam(samFile):
         numMatches = extractFromCigar("M", rec.cigar)
         numDeletions = extractFromCigar("D", rec.cigar)
 
-        readData = {"readName":rec.query, "chrom":rec.rnam,
-        "alignmentScore":query.align_score, "mismatches":rec.mismatches,
-        "insert_size": None, "pos_1": rec.pos, "pos_2": -1,
-        "numMatches":numMatches, "numDeletions":numDeletions}
+        if rec.flag != 4 and rec.flag != 8:
+            readData = {"readName":rec.query, "chrom":rec.rnam,
+            "alignmentScore":query.align_score, "numMismatches":rec.mismatches,
+            "insertSize": None, "pos_1": rec.pos, "pos_2": -1,
+            "numMatches":numMatches, "numDeletions":numDeletions}
 
+            fastqData.append(read_data)
+    return fastqData
+
+def getReadDataFromUnmergedSam(unmergedSam):
+    fastqData = []
+    for rec in ParseSam(samFile):
+        numMatches = extractFromCigar("M", rec.cigar)
+        numDeletions = extractFromCigar("D", rec.cigar)
+        readData = {"readName":rec.query, "samFlag":rec.flag, "chrom":rec.rnam,
+        "alignmentScore":rec.align_score, "numMismatches":rec.mismatches,
+        "mateStart":rec.pnext, "insertSize":rec.tlen, "pos":rec.pos,
+        "numMatches":numMatches, "numDeletions":numDeletions}
         fastqData.append(read_data)
+    return fastqData
+
+
+def bowtie2ReadRescue(mergedSam, unmergedSam, diffFromMaxPercent=0.025):
+
+    fastqData = getReadDataFromSam(mergedSam)
 
     #Transform the fastqData into a pandas dataframe
-    df = pd.DataFrame(fastq_data)
+    df = pd.DataFrame(fastqData)
     df_unfilt = df.copy(deep=True)
 
     #Filter reads that arent within a certian quality percentage
     # from the maximum scoring alignment for each read
     df["maxScoreReadName"] = df.groupby("readName")["alignmentScore"].transform(max)
-    df["2point5_percent_max_round"] = np.round(df["read_name_score_max"] * diffFromMaxPercent)
-    df["score_max_diff"] = df["read_name_score_max"] - df["alignment_score"]
-    df = df[df["score_max_diff"] <= df["2point5_percent_max_round"]]
+    df["diffPercentMaxRound"] = np.round(df["readNameScoreMax"] * diffFromMaxPercent)
+    df["scoreMaxDiff"] = df["readNameScoreMax"] - df["alignmentScore"]
+    df = df[df["scoreMaxDiff"] <= df["diffPercentMaxRound"]]
 
-
+    # Filter out reads with less than 75 bp matching.
+    df = df[df["num_matches"] > 74]
+    # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
+    df["mismatchRatio"] = df["numMismatches"].astype(float) / df["numMatches"].astype(float)
+    df = df[df["mismatchRatio"] < 0.025]
+    # Filter out reads with too many deletions.
+    df = df[df["numDeletions"] < 3]
+    # Finally keep reads that have only one annotated chromosome.
+    mapper = df.groupby("readName")["chrom"].nunique().to_dict()
+    df["uniqueChroms"] = df["readName"].map(mapper)
+    df = df[df["uniqueChroms"] == 1]
+    print(df)
 

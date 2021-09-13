@@ -6,12 +6,14 @@ Requirements:
 - Flash
 - Samtools
 
-Modules:
+<h2>Modules</h2>
+SCiMS is made up of several modules
 
-build-index:
- -input: can accept both FASTA and FASTQ files
+build-index: Builds indicies for both BWA and Bowtie2. 
 
-Installation:
+determine-sex: Determine the sex of the metagenomic sample. 
+
+SCiMS can be easily installed with:
 ```bash
 pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 

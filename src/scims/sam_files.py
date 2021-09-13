@@ -38,7 +38,7 @@ class ReadSamLine:
     def __init__(self, samLine):
         self.samLine = samLine
 
-    def getFeatures(self,bowtie2=False):
+    def getFeatures(self):
         '''
         Takes a line from a SAM file as
         a string collects information
@@ -55,9 +55,9 @@ class ReadSamLine:
             self.cigar = samFields[5]
             self.rnext = samFields[6]
             self.pnext = samFields[7]
-            self.tlen = samFields[8]
+            self.tlen = int(samFields[8])
             self.seq = samFields[9]
-            self.qual = int(samFields[10])
+            self.qual = samFields[10]
             self.align_score = None
             self.align_score_best = None
             self.align_score_mate = None
@@ -70,32 +70,32 @@ class ReadSamLine:
             self.yt = None
             self.mismatch_ref_bases = None
 
-        if bowtie2 == True:
+        if len(samFields) >= 10:
             #If the file is a bowtie file, get the bowtie-specific
             # fields in the SAM file
             for field in samFields[10:]:
                 if "AS:i" in field:
-                    self.align_score = int(field)
+                    self.align_score = int(field.strip("AS:i"))
                 elif "XS:i" in field:
-                    self.align_score_best = int(field)
+                    self.align_score_best = int(field.strip("XS:i"))
                 elif "YS:i" in field:
-                    self.align_score_mate = field
+                    self.align_score_mate = int(field.strip("YS:i"))
                 elif "XN:i" in field:
-                    self.num_ambig = field
+                    self.num_ambig = int(field.strip("XN:i"))
                 elif "XM:i" in field:
-                    self.mismatches = field
+                    self.mismatches = int(field.strip("XM:i"))
                 elif "XO:i" in field:
-                    self.gap_opens = field
+                    self.gap_opens = int(field.strip("XO:i"))
                 elif "XG:i" in field:
-                    self.gap_ext = field
+                    self.gap_ext = int(field.strip("XG:i"))
                 elif "NM:i" in field:
-                    self.edit_distance = field
+                    self.edit_distance = int(field.strip("NM:i"))
                 elif "YF:Z" in field:
-                    self.why_filtered = field
+                    self.why_filtered = int(field.strip("YF:Z"))
                 elif "YT:Z" in field:
-                    self.yt = field
+                    self.yt = field.strip("YT:Z")
                 elif "MD:Z" in field:
-                    self.mismatch_ref_bases = field
+                    self.mismatch_ref_bases = field.strip("MD:Z")
 
 
 
