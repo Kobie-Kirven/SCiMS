@@ -102,15 +102,15 @@ class ReadSamLine:
 def parseCigarStr(cigarStr):
     """Parse thought a cigar string from the SAM file
     and return a list for each cigar feature"""
-    lengthOfCigarFeature = 0
+    lengthOfCigarFeature = ""
     cigarList = []
     for char in cigarStr:
         if char in {"S", "I", "M", "D", "X", "N", "H", "P", "="}:
             cigarList.append((char, int(lengthOfCigarFeature)))
-            lengthOfCigarFeature = 0
+            lengthOfCigarFeature = ""
         else:
             try:
-                lengthOfCigarFeature += int(char)
+                lengthOfCigarFeature = lengthOfCigarFeature + char
             except:
                 raise Exception("Unexpected char in cigar string: {}".format(char))
     return cigarList
