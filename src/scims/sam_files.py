@@ -1,6 +1,7 @@
 # Author: Kobie Kirven, Kyle McGovern
 # Davenport Lab - Penn State University
 # Date: 9-2-2021
+import gzip
 
 
 class ParseSam:
@@ -128,3 +129,32 @@ def isFileGzip(fileName):
         return True
     else:
         return False
+
+def fastaOrFastq(fileName):
+    '''
+    Checks if the input file is in fasta or fastq format
+
+    args: 
+    fileName(str): Name of the file to be checked
+
+    returns: A string "fasta" if the file is a fasta
+            file and "fastq" if if file is fastq
+    '''
+    if isFileGzip(fileName) == True:
+        with gzip.open(fileName, "rb") as fn:
+            line = fn.readline()
+            if str(line)[2:].startswith("@"):
+                return "fastq"
+            elif str(line)[2:].startswith(">"):
+                return "fasta"
+            else:
+                raise IOError
+    else:
+        with open(fileName) as fn:
+            line = fn.readline()
+            if line.startswith("@"):
+                return "fastq"
+            elif line.startswith(">"):
+                return "fasta"
+            else:
+                raise IOError

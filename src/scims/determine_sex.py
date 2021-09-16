@@ -17,7 +17,11 @@ global filesList
 filesList = []
 
 def tempFilesList(fileName):
-    '''Add the tempoary file name to the list'''
+    '''
+    Adds the temporary file to the list of temporary files
+    
+    Args: fileName(str): path to the temporary file
+    '''
     if type(fileName) in [int, list]:
         raise TypeError
     elif fileName in filesList:
@@ -135,16 +139,17 @@ def mergeWithFlash(pair1, pair2, mismatchRatio=0.1, maxOverlap=150, minOverlap=4
     tempdir = tempfile.TemporaryDirectory()
     subprocess.run(["flash", "-x",str(mismatchRatio), "-M", str(maxOverlap),"-m", str(minOverlap),
         pair1, pair2, "-d", tempdir.name])
-    merged = convertToTemp(tempdir.name + "out.extendedFrags.fastq")
-    unmerged1 = convertToTemp(tempdir.name + "out.notCombined_1.fastq")
-    unmerged2 = convertToTemp(tempdir.name + "out.notCombined_2.fastq")
+    merged = convertToTemp(tempdir.name + "/out.extendedFrags.fastq")
+    unmerged1 = convertToTemp(tempdir.name + "/out.notCombined_1.fastq")
+    unmerged2 = convertToTemp(tempdir.name + "/out.notCombined_2.fastq")
     return merged, unmerged1, unmerged2
 
 def convertToTemp(oldFile):
+    '''Convert the outputs from Flash into temporary files'''
     with open(oldFile) as fn:
         with tempfile.NamedTemporaryFile(delete=False) as f:
             for line in fn:
-                f.wirte(line.encode)
+                f.write(line.encode())
             return f.name
 
 def alignMergedWithBowtie2(index, merged, threads=1, noOfAlignPerRead=50):
@@ -182,7 +187,7 @@ def getReadDataFromMergedSam(samFile):
 
 def getReadDataFromUnmergedSam(unmergedSam):
     fastqData = []
-    for rec in ParseSam(samFile):
+    for rec in ParseSam(unmergedSam):
         if rec.cigar != "*":
             numMatches = extractFromCigar("M", rec.cigar)
             numDeletions = extractFromCigar("D", rec.cigar)
@@ -190,11 +195,10 @@ def getReadDataFromUnmergedSam(unmergedSam):
             "alignmentScore":rec.align_score, "numMismatches":rec.mismatches,
             "mateStart":rec.pnext, "insertSize":rec.tlen, "pos":rec.pos,
             "numMatches":numMatches, "numDeletions":numDeletions}
-            fastqData.append(readDdata)
+            fastqData.append(readData)
     return fastqData
 
-
-def readRescueMerged(mergedSam, unmergedSam, diffFromMaxPercent=0.025, 
+def readRescueMerged(mergedSam, diffFromMaxPercent=0.025, 
     minMatch=74, mismatchRatio=0.025, numDeletions=3):
 
     fastqData = getReadDataFromMergedSam(mergedSam)
@@ -211,13 +215,16 @@ def readRescueMerged(mergedSam, unmergedSam, diffFromMaxPercent=0.025,
         df["scoreMaxDiff"] = df["maxScoreReadName"] - df["alignmentScore"]
         df = df[df["scoreMaxDiff"] <= df["diffPercentMaxRound"]]
 
-        # Filter out reads with less than 75 bp matching.
+        # Filter out reads with less than a certian number of bases matching.
         df = df[df["numMatches"] > minMatch]
+
         # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
         df["mismatchRatio"] = df["numMismatches"].astype(float) / df["numMatches"].astype(float)
         df = df[df["mismatchRatio"] < mismatchRatio]
+
         # Filter out reads with too many deletions.
         df = df[df["numDeletions"] < numDeletions]
+
         # Finally keep reads that have only one annotated chromosome.
         mapper = df.groupby("readName")["chrom"].nunique().to_dict()
         df["uniqueChroms"] = df["readName"].map(mapper)
@@ -227,11 +234,11 @@ def readRescueMerged(mergedSam, unmergedSam, diffFromMaxPercent=0.025,
         return False
 
 
-def readRescueUnmerged(mergedSam, diffFromMaxPercent=0.025, minMatch=100, numDeletions=3):
+def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numDeletions=3):
 
     read_pair = []
     fastq_data = []
-    fastqData = getReadDataFromUnmergedSam(mergedSam)
+    fastqData = getReadDataFromUnmergedSam(unmergedSam)
 
     for readData in fastqData:
         read_pair.append(readData)
