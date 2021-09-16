@@ -5,7 +5,6 @@
 import os
 from Bio import SeqIO
 import gzip
-from .build_index import TestFile
 from .sam_files import *
 import subprocess
 import pandas as pd
@@ -18,9 +17,16 @@ global filesList
 filesList = []
 
 def tempFilesList(fileName):
-    filesList.append(fileName)
+    '''Add the tempoary file name to the list'''
+    if type(fileName) in [int, list]:
+        raise TypeError
+    elif fileName in filesList:
+        pass
+    else:
+        filesList.append(fileName)
 
 def deleteTempFileList():
+    '''Delete the list of temporary files'''
     try:
         for file in filesList:
             os.unlink(file)
@@ -154,62 +160,125 @@ def pairedReadsWithBowtie2(index, forwardReads, reverseReads, threads=1, noOfAli
     with tempfile.NamedTemporaryFile(delete=False) as f:
         subprocess.run(["bowtie2","-p",str(threads),"-k", str(noOfAlignPerRead),"--local",
             "-x", index, "-1", forwardReads, "-2", reverseReads], stdout=f)
-        return f.name`
+        return f.name
 
 
 def getReadDataFromMergedSam(samFile):
+    '''Get data from the SAM file of merged reads'''
     fastqData = []
     for rec in ParseSam(samFile):
-        numMatches = extractFromCigar("M", rec.cigar)
-        numDeletions = extractFromCigar("D", rec.cigar)
+        if rec.cigar != "*":
+            numMatches = extractFromCigar("M", rec.cigar)
+            numDeletions = extractFromCigar("D", rec.cigar)
 
-        if rec.flag != 4 and rec.flag != 8:
-            readData = {"readName":rec.query, "chrom":rec.rnam,
-            "alignmentScore":query.align_score, "numMismatches":rec.mismatches,
-            "insertSize": None, "pos_1": rec.pos, "pos_2": -1,
-            "numMatches":numMatches, "numDeletions":numDeletions}
+            if rec.flag != 4 and rec.flag != 8:
+                readData = {"readName":rec.query, "chrom":rec.rnam,
+                "alignmentScore":rec.align_score, "numMismatches":rec.mismatches,
+                "insertSize": None, "pos_1": rec.pos, "pos_2": -1,
+                "numMatches":numMatches, "numDeletions":numDeletions}
 
-            fastqData.append(read_data)
+                fastqData.append(readData)
     return fastqData
 
 def getReadDataFromUnmergedSam(unmergedSam):
     fastqData = []
     for rec in ParseSam(samFile):
-        numMatches = extractFromCigar("M", rec.cigar)
-        numDeletions = extractFromCigar("D", rec.cigar)
-        readData = {"readName":rec.query, "samFlag":rec.flag, "chrom":rec.rnam,
-        "alignmentScore":rec.align_score, "numMismatches":rec.mismatches,
-        "mateStart":rec.pnext, "insertSize":rec.tlen, "pos":rec.pos,
-        "numMatches":numMatches, "numDeletions":numDeletions}
-        fastqData.append(read_data)
+        if rec.cigar != "*":
+            numMatches = extractFromCigar("M", rec.cigar)
+            numDeletions = extractFromCigar("D", rec.cigar)
+            readData = {"readName":rec.query, "samFlag":rec.flag, "chrom":rec.rnam,
+            "alignmentScore":rec.align_score, "numMismatches":rec.mismatches,
+            "mateStart":rec.pnext, "insertSize":rec.tlen, "pos":rec.pos,
+            "numMatches":numMatches, "numDeletions":numDeletions}
+            fastqData.append(readDdata)
     return fastqData
 
 
-def bowtie2ReadRescue(mergedSam, unmergedSam, diffFromMaxPercent=0.025):
+def readRescueMerged(mergedSam, unmergedSam, diffFromMaxPercent=0.025, 
+    minMatch=74, mismatchRatio=0.025, numDeletions=3):
 
-    fastqData = getReadDataFromSam(mergedSam)
+    fastqData = getReadDataFromMergedSam(mergedSam)
 
-    #Transform the fastqData into a pandas dataframe
-    df = pd.DataFrame(fastqData)
-    df_unfilt = df.copy(deep=True)
+    if fastqData:
+        #Transform the fastqData into a pandas dataframe
+        df = pd.DataFrame(fastqData)
+        df_unfilt = df.copy(deep=True)
 
-    #Filter reads that arent within a certian quality percentage
-    # from the maximum scoring alignment for each read
-    df["maxScoreReadName"] = df.groupby("readName")["alignmentScore"].transform(max)
-    df["diffPercentMaxRound"] = np.round(df["readNameScoreMax"] * diffFromMaxPercent)
-    df["scoreMaxDiff"] = df["readNameScoreMax"] - df["alignmentScore"]
-    df = df[df["scoreMaxDiff"] <= df["diffPercentMaxRound"]]
+        #Filter reads that arent within a certian quality percentage
+        # from the maximum scoring alignment for each read
+        df["maxScoreReadName"] = df.groupby("readName")["alignmentScore"].transform(max)
+        df["diffPercentMaxRound"] = np.round(df["maxScoreReadName"] * diffFromMaxPercent)
+        df["scoreMaxDiff"] = df["maxScoreReadName"] - df["alignmentScore"]
+        df = df[df["scoreMaxDiff"] <= df["diffPercentMaxRound"]]
 
-    # Filter out reads with less than 75 bp matching.
-    df = df[df["num_matches"] > 74]
+        # Filter out reads with less than 75 bp matching.
+        df = df[df["numMatches"] > minMatch]
+        # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
+        df["mismatchRatio"] = df["numMismatches"].astype(float) / df["numMatches"].astype(float)
+        df = df[df["mismatchRatio"] < mismatchRatio]
+        # Filter out reads with too many deletions.
+        df = df[df["numDeletions"] < numDeletions]
+        # Finally keep reads that have only one annotated chromosome.
+        mapper = df.groupby("readName")["chrom"].nunique().to_dict()
+        df["uniqueChroms"] = df["readName"].map(mapper)
+        df = df[df["uniqueChroms"] == 1]
+        return df
+    else:
+        return False
+
+
+def readRescueUnmerged(mergedSam, diffFromMaxPercent=0.025, minMatch=100, numDeletions=3):
+
+    read_pair = []
+    fastq_data = []
+    fastqData = getReadDataFromUnmergedSam(mergedSam)
+
+    for readData in fastqData:
+        read_pair.append(readData)
+        if not read_pair:
+            if readData["samFlag"] & 2 == 2 and readData["samFlag"] & 64 == 64:
+                read_pair.append(readData)
+
+        else:
+            if (abs(readData["insertSize"]) == abs(read_pair[0]["insertSize"]) and readData["chrom"] == read_pair[0]["chrom"] and readData["readName"] == read_pair[0]["readName"]):
+                read_pair.append(readData)
+                total_num_matches = read_pair[0]["numMatches"] + read_pair[1]["numMatches"]
+                total_num_mismatches = read_pair[0]["numMismatches"] + read_pair[1]["numMismatches"]
+                total_num_deletions = read_pair[0]["numDeletions"] + read_pair[1]["numDeletions"]
+                total_alignment_score = read_pair[0]["alignmentScore"] + read_pair[1]["alignmentScore"]
+                fastq_data.append({"readName": readData["readName"], "numMismatches": total_num_mismatches, "chrom": readData["chrom"],
+                                   "numMatches": total_num_matches, "numDeletions": total_num_deletions,
+                                   "insertSize": abs(readData["insertSize"]), "alignmentScore": total_alignment_score,
+                                   "pos_1": read_pair[0]["pos"], "pos_2": read_pair[1]["pos"]})
+                read_pair = []
+
+    df_pair = pd.DataFrame(fastq_data)
+    df_pair_unfilt = df_pair.copy(deep=True)
+
+    # Filter reads with big insert size (gt 999)
+    df_pair = df_pair[df_pair["insertSize"] < 1000]
+
+    # Filter out reads less than 2.5% max score.
+    df_pair["maxScoreReadName"] = df_pair.groupby("readName")["alignmentScore"].transform(max)
+    df_pair["diffPercentMaxRound"] = np.round(df_pair["maxScoreReadName"] * diffFromMaxPercent)
+    df_pair["scoreMaxDiff"] = df_pair["maxScoreReadName"] - df_pair["alignmentScore"]
+    df_pair = df_pair[df_pair["scoreMaxDiff"] <= df_pair["diffPercentMaxRound"]]
+
+    # Filter out reads with less than 100 bp matching.
+    df_pair = df_pair[df_pair["numMatches"] >= minMatch]
+
     # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
-    df["mismatchRatio"] = df["numMismatches"].astype(float) / df["numMatches"].astype(float)
-    df = df[df["mismatchRatio"] < 0.025]
+    df_pair["mismatchRatio"] = df_pair["numMismatches"].astype(float) / df_pair["numMatches"].astype(float)
+    df_pair = df_pair[df_pair["mismatchRatio"] < 0.025]
+
     # Filter out reads with too many deletions.
-    df = df[df["numDeletions"] < 3]
+    df_pair = df_pair[df_pair["numDeletions"] <= numDeletions]
+
     # Finally keep reads that have only one annotated chromosome.
-    mapper = df.groupby("readName")["chrom"].nunique().to_dict()
-    df["uniqueChroms"] = df["readName"].map(mapper)
-    df = df[df["uniqueChroms"] == 1]
-    print(df)
+    mapper = df_pair.groupby("readName")["chrom"].nunique().to_dict()
+    df_pair["uniqueChroms"] = df_pair["readName"].map(mapper)
+    df_pair = df_pair[df_pair["uniqueChroms"] == 1]
+
+    
+
 

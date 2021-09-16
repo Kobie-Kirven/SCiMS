@@ -5,8 +5,8 @@
 
 # imports
 import argparse
-from .scims import BuildIndex, TestFile
-from .scims.determine_sex import GetProportion
+from .scims import BuildIndex
+from .scims.determine_sex import *
 
 
 def scims():
@@ -111,14 +111,15 @@ def scims():
         index.buildBowtie2Index()
 
     elif args.command == "determine-sex":
-        sample = GetProportion(args.index, args.forward, args.reverse, args.threads)
-        sample.getHumanSequences()
-        sample.getSexSequences(args.homogametic, args.heterogametic, "reads.sam")
-        sample.getFastqReadsInSam()
-        sample.mergeWithFlash()
-        sample.alignWithBowtie2(input1="flash.extendedFrags.fastq", merged=True)
-        sample.alignWithBowtie2(
-            input1="flash.notCombined_1.fastq",
-            input2="flash.notCombined_2.fastq",
-            merged=False,
-        )
+        bwa = alignWithBwa(args.index, args.forward, args.reverse, args.threads)
+        human = getHumanSequences(bwa)
+        sam = getSexSequences(human, args.homogametic, args.heterogametic)
+        uniqueIds = getUniqueIdsInSam(sam)
+        files = getFastqReadsInSam(uniqueIds, args.forward, args.reverse)
+        merged = mergeWithFlash(files[0], files[1])
+        mergeAligned = alignMergedWithBowtie2(args.index, merged[0])
+        unmergeAligned = pairedReadsWithBowtie2(args.index, merged[1], merged[2])
+        mergeDf = readRescueMerged(mergeAligned)
+        unmergedDf = readRescueUnmerged(unmergeAligned)
+
+
