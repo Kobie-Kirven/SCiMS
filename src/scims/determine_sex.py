@@ -61,7 +61,7 @@ def getHumanSequences(inputSam):
     return f.name
 
 
-def getSexSequences(inputBam, homogamete, heterogamete, mapqMin=50, tlen=75):
+def getSexSequences(inputBam, homogamete, heterogamete, isFilter=True, mapqMin=50, tlen=75):
     '''
     Input two strings for the homogametic element and one for the
     heterogametic element
@@ -72,16 +72,27 @@ def getSexSequences(inputBam, homogamete, heterogamete, mapqMin=50, tlen=75):
         name = f.name
         tempFilesList(f.name)
 
-    with tempfile.NamedTemporaryFile(delete=False) as g:
-        for line in open(f.name):
-            rec = ReadSamLine(line)
-            rec.getFeatures()
-            if rec.mapq < mapqMin:
+    if isFilter:
+        with tempfile.NamedTemporaryFile(delete=False) as g:
+            for line in open(f.name):
+                rec = ReadSamLine(line)
+                rec.getFeatures()
+                if rec.mapq < mapqMin:
+                    if rec.rnam == homogamete or rec.rnam == heterogamete:
+                        if rec.tlen > tlen or rec.tlen < (tlen * -1):
+                            g.write(line.encode())
+            tempFilesList(g.name)                
+            return g.name
+    else:
+        with tempfile.NamedTemporaryFile(delete=False) as g:
+            for line in open(f.name):
+                rec = ReadSamLine(line)
+                rec.getFeatures()
                 if rec.rnam == homogamete or rec.rnam == heterogamete:
                     if rec.tlen > tlen or rec.tlen < (tlen * -1):
                         g.write(line.encode())
-        tempFilesList(g.name)                
-        return g.name
+            tempFilesList(g.name)                
+            return g.name
 
 def getUniqueIdsInSam(inputSam):
     '''Get the unique query names from the SAM file'''
@@ -299,7 +310,7 @@ def readRescueUpdate(df,inBam, minMapq):
     ok_reads = set()
     seen_starts = set()
     seen_ends = set()
-    sam = bam2sam(inBam)
+    sam = inBam
     with tempfile.NamedTemporaryFile(delete=False) as out_sam:
         for line in open(sam, "r"):
             if line.startswith("@"):

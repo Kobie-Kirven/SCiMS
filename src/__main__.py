@@ -122,7 +122,8 @@ def scims():
         mergeDf = readRescueMerged(mergeAligned)
         unmergedDf = readRescueUnmerged(unmergeAligned)
         combDf = combineDf(mergeDf,unmergedDf)
-        update = readRescueUpdate(combDf,human, 50)
+        filtSam = getSexSequences(human, args.homogametic, args.heterogametic, isFilter=False)
+        update = readRescueUpdate(combDf,filtSam, 50)
         countChrom(update)
         deleteTempFileList()
 
