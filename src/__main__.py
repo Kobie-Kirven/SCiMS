@@ -121,5 +121,9 @@ def scims():
         unmergeAligned = pairedReadsWithBowtie2(args.index, merged[1], merged[2])
         mergeDf = readRescueMerged(mergeAligned)
         unmergedDf = readRescueUnmerged(unmergeAligned)
+        combDf = combineDf(mergeDf,unmergedDf)
+        update = readRescueUpdate(combDf,human, 50)
+        countChrom(update)
+        deleteTempFileList()
 
 

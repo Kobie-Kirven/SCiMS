@@ -109,7 +109,7 @@ def getFastqReadsInSam(readIds, forwardReads, reverseReads):
 
     for rec1 in SeqIO.parse(forwardReads, fileType):
         if str(rec1.id)[:-2] in readIds:
-            outFastq1.write(("@" + str(rec1.description) + "\n").encode())
+            outFastq1.write(("@" + str(rec1.description)[:-2] + "\n").encode())
             outFastq1.write((str(rec1.seq) + "\n").encode())
             outFastq1.write("+\n".encode())
             quality = ""
@@ -119,7 +119,7 @@ def getFastqReadsInSam(readIds, forwardReads, reverseReads):
 
     for rec2 in SeqIO.parse(reverseReads, fileType):
         if str(rec2.id)[:-2] in readIds:
-            outFastq2.write(("@" + str(rec2.description) + "\n").encode())
+            outFastq2.write(("@" + str(rec2.description)[:-2] + "\n").encode())
             outFastq2.write((str(rec2.seq) + "\n").encode())
             outFastq2.write("+\n".encode())
             quality = ""
@@ -286,6 +286,96 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
     df_pair["uniqueChroms"] = df_pair["readName"].map(mapper)
     df_pair = df_pair[df_pair["uniqueChroms"] == 1]
 
+def combineDf(df1, df2):
+    return pd.concat([df1, df2])
+
+def bam2sam(inputBam):
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        smallSam = subprocess.run(["samtools", "view", inputBam],
+            stdout=f)
+        return f.name
+
+def readRescueUpdate(df,inBam, minMapq):
+    ok_reads = set()
+    seen_starts = set()
+    seen_ends = set()
+    sam = bam2sam(inBam)
+    with tempfile.NamedTemporaryFile(delete=False) as out_sam:
+        for line in open(sam, "r"):
+            if line.startswith("@"):
+                continue
+            sam_fields = line.strip().split("\t")
+            header = sam_fields[0]
+            chrom = sam_fields[2]
+            start = int(sam_fields[3])
+            tlen = int(sam_fields[8])
+            mapq_score = int(sam_fields[4])
+            sam_flag = int(sam_fields[1])
+            if (sam_flag & 256 == 256) or (sam_flag & 2048 == 2048):
+                continue
+            if sam_flag & 64 != 64 or tlen < 0:
+                continue
+            start_coord = "{}:{}".format(chrom, start)
+            end_coord = "{}:{}".format(chrom, start+tlen-1)
+            if mapq_score >= minMapq:
+                seen_starts.add(start_coord)
+                seen_ends.add(end_coord)
+        group_df_dict = {g: gdf for g, gdf in df.groupby("readName")}
+        for line in open(sam, "r"):
+            if line.startswith("@"):
+                out_sam.write(line.encode())
+                continue
+            sam_fields = line.strip().split("\t")
+            header = sam_fields[0]
+            chrom = sam_fields[2]
+            mapq_score = int(sam_fields[4])
+            # Check if read has been added already. if it has write and
+            if header in ok_reads:
+                out_sam.write(line.encode())
+                continue
+            elif mapq_score >= minMapq:
+                out_sam.write(line.encode())
+                ok_reads.add(header)
+                continue
+            else:
+                try:
+                    sub_df = group_df_dict[header]
+                except:
+                    continue
+                do_not_add = False
+                if not sub_df.empty:
+                    if not sub_df["chrom"].iloc[0] == chrom:
+                        continue
+                    to_add_start = []
+                    to_add_end = []
+                    for i, row in sub_df.iterrows():
+                        coord_start = "{}:{}".format(row["chrom"], row["pos_1"])
+                        if int(row["pos_2"]) != -1:
+                            coord_end = "{}:{}".format(row["chrom"], row["pos_2"])
+                        else:
+                            coord_end = False
+                        if coord_start in seen_starts:
+                            do_not_add = True
+                        else:
+                            if coord_end:
+                                if coord_end in seen_ends:
+                                    do_not_add = True
+                        if not do_not_add:
+                            to_add_start.append(coord_start)
+                            if coord_end:
+                                to_add_end.append(coord_end)
+                else:
+                    do_not_add = True
+                if not do_not_add:
+                    for coord in to_add_start:
+                        seen_starts.add(coord)
+                    for coord in to_add_end:
+                        seen_ends.add(coord)
+                    ok_reads.add(header)
+                    out_sam.write(line.encode())
+        return out_sam.name
     
+def countChrom(sam):
+    subprocess.run(["cat " + sam + " | cut -f 3 | sort-uniq-count-rank"], shell=True)
 
 
