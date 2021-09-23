@@ -1,5 +1,5 @@
 
-<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" height="300">
+<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" width="300">
 <h1>Sex Calling for Metagenomic Sequences</h1>
 
 - [What is SCiMS?](#What is SCiMS?:)
@@ -25,7 +25,7 @@ to the heterogametic chromosome versus both sex chromosomes together.
 - Flash
 - Samtools
 
-All of the required tools can be installed with conda (see [Install Requirements](#Install Requirements))
+All of the required tools can be installed with conda (see [Install Requirements](#Install Requirements:))
 
 SCiMS can be easily installed with:
 ```bash
@@ -51,3 +51,4 @@ conda install -c bioconda flash
 conda install -c bioconda bowtie2
 conda install -c bioconda samtools
 ```
+##Quick Tutorial:
