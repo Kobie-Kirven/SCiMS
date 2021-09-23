@@ -127,7 +127,7 @@ def scims():
         chromCounts = countChrom(update, args.homogametic,args.heterogametic)
         stats = calculateStats(chromCounts[0], chromCounts[1])
         print("The proportion of {} reads to {} reads is:".format(args.heterogametic, args.homogametic))
-        print('{} u"\u00B1" {}'.format(stats[0], stats[1]))
+        print('{} \u00B1 {}'.format(stats[0], stats[1]))
         print("Thank you for using SCiMS!")
         deleteTempFileList()
 
