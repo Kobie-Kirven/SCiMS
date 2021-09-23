@@ -280,7 +280,7 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
     df_pair_unfilt = df_pair.copy(deep=True)
 
     # Filter reads with big insert size (gt 999)
-    df_pair = df_pair[df_pair["insertSize"] < 1000]
+    # df_pair = df_pair[df_pair["insertSize"] < 1000]
 
     # Filter out reads less than 2.5% max score.
     df_pair["maxScoreReadName"] = df_pair.groupby("readName")["alignmentScore"].transform(max)
