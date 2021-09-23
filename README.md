@@ -2,7 +2,7 @@
 <img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" width="300">
 <h1>Sex Calling for Metagenomic Sequences</h1>
 
-+ [What is SCiMS?](##What-is-SCiMS?:)
++ [What is SCiMS?](#What-is-SCiMS?:)
 + [Installation](#Installation:)
 + [Usage](#Usage:)
   + [Building Indicies](#Building-Indices:)
@@ -10,14 +10,14 @@
 + [Install Requirements](#Install-Requirements:)
 + [Quick Tutorial](#Quick-Tutorial:)
 ---
-##What is SCiMS?:
+## What is SCiMS?:
 SCiMS (Sex Calling for Metagenomic Sequences) is a tool for determining 
 host sex using shotgun metagenomic data. Currently, this tool supports sex
 determination for host organisms that contain two sex chromosomes.
 (Ex. X and Y in humans). Briefly, SCiMS works by aligning shotgun metagenomic
 data to a reference genome and calculating the proportion of reads that map 
 to the heterogametic chromosome versus both sex chromosomes together. 
-##Installation:
+## Installation:
 
 <h4>Requirements:</h4>
 - bwa
@@ -31,7 +31,7 @@ SCiMS can be easily installed with:
 ```bash
 pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 ```
-##Usage:
+## Usage:
 - ###Building Indices:
   The first step in using SCiMS is to build indices of the reference genome for
   BWA and Bowtie2. The ```build-index``` module makes it easy to build the indices
