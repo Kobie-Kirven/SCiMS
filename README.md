@@ -3,15 +3,12 @@
 <h1>Sex Calling for Metagenomic Sequences</h1>
 
 - [What is SCiMS?](#What-is-SCiMS?)
-
-[Installation](#Installation)
-
-[Usage](#Usage:)
-  + [Building Indicies](#Building-Indices)
-  + [Determine Sex](#Determine-Sex:)
-  + [Install Requirements](#Install-Requirements:)
-  + 
-[Quick Tutorial](#Quick-Tutorial)
+- [Installation](#Installation)
+- [Usage](#Usage)
+  - [Building Indicies](#Building-Indices)
+  - [Determine Sex](#Determine-Sex)
+- [Install Requirements](#Install-Requirements)
+- [Quick Tutorial](#Quick-Tutorial)
 ---
 ## What is SCiMS?
 SCiMS (Sex Calling for Metagenomic Sequences) is a tool for determining 
@@ -34,19 +31,19 @@ SCiMS can be easily installed with:
 ```bash
 pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 ```
-## Usage:
+## Usage
 - ### Building Indices
   The first step in using SCiMS is to build indices of the reference genome for
   BWA and Bowtie2. The ```build-index``` module makes it easy to build the indices
   for both tools with one command. 
-- #### Requirements:
-  * Reference genome in FASTA format (can be gzip)
-  * Name of output index
-    ```bash
-    scims build-index -r <reference_genome> -o <index_name>
-    ```
-- ### Determine Sex:
-## Install Requirements:
+  - #### Requirements
+    * Reference genome in FASTA format (can be gzip)
+    * Name of output index
+      ```bash
+      scims build-index -r <reference_genome> -o <index_name>
+      ```
+- ### Determine Sex
+## Install Requirements
 To install the required tools with conda, run the following code. 
 ```bash
 conda install -c bioconda bwa
