@@ -2,12 +2,12 @@
 <img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" width="300">
 <h1>Sex Calling for Metagenomic Sequences</h1>
 
-[What is SCiMS?](#What-is-SCiMS?)
+- [What is SCiMS?](#What-is-SCiMS?)
 
 [Installation](#Installation)
 
 [Usage](#Usage:)
-  + [Building Indicies](#Building-Indices:)
+  + [Building Indicies](#Building-Indices)
   + [Determine Sex](#Determine-Sex:)
   + [Install Requirements](#Install-Requirements:)
   + 
@@ -35,7 +35,7 @@ SCiMS can be easily installed with:
 pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 ```
 ## Usage:
-- ### Building Indices:
+- ### Building Indices
   The first step in using SCiMS is to build indices of the reference genome for
   BWA and Bowtie2. The ```build-index``` module makes it easy to build the indices
   for both tools with one command. 
