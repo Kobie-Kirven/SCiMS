@@ -8,9 +8,9 @@
   + [Building Indicies](#Building-Indices:)
   + [Determine Sex](#Determine-Sex:)
 + [Install Requirements](#Install-Requirements:)
-+ [Quick Tutorial](#Quick-Tutorial:)
+- [Quick Tutorial](#Quick-Tutorial:)
 ---
-# What is SCiMS?:
+## What is SCiMS?:
 SCiMS (Sex Calling for Metagenomic Sequences) is a tool for determining 
 host sex using shotgun metagenomic data. Currently, this tool supports sex
 determination for host organisms that contain two sex chromosomes.
