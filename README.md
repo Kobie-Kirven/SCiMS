@@ -2,14 +2,14 @@
 <img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" width="300">
 <h1>Sex Calling for Metagenomic Sequences</h1>
 
-- [What is SCiMS?](#What is SCiMS?:)
-- [Installation](#Installation:)
-- [Usage](#Usage:)
-  - [Building Indicies](#Building Indices:)
-  - [Determine Sex](#Determine Sex:)
-- [Install Requirements](#Install Requirements:)
-- [Quick Tutorial](#Quick Tutorial:)
-
++ [What is SCiMS?](##What-is-SCiMS?:)
++ [Installation](#Installation:)
++ [Usage](#Usage:)
+  + [Building Indicies](#Building-Indices:)
+  + [Determine Sex](#Determine-Sex:)
++ [Install Requirements](#Install-Requirements:)
++ [Quick Tutorial](#Quick-Tutorial:)
+---
 ##What is SCiMS?:
 SCiMS (Sex Calling for Metagenomic Sequences) is a tool for determining 
 host sex using shotgun metagenomic data. Currently, this tool supports sex
