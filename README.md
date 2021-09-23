@@ -1,5 +1,5 @@
 
-<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" height="200">
+<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/logo.png" height="300">
 <h1>Sex Calling for Metagenomic Sequences</h1>
 
 - [What is SCiMS?](#What is SCiMS?:)
