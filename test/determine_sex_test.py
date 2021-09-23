@@ -1,7 +1,8 @@
 import unittest
 import sys
 sys.path.append("../")
-import Bio
+
+
 from src.scims.determine_sex import *
 
 tempFilesList = []
@@ -13,6 +14,10 @@ class TestDetermineSex(unittest.TestCase):
 		with self.assertRaises(TypeError):
 			tempFilesList(2)
 			tempFilesList([])
+
+	def test_calculateStats(self):
+		self.assertEqual(calculateStats(2313, 1219)[0], 0.345)
+		self.assertEqual(calculateStats(2313, 1219)[1], 0.016)
 
 
 if __name__ == '__main__':

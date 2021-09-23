@@ -27,7 +27,7 @@ def isFileGzip(fileName):
 
 def fastaOrFastq(fileName):
     # Check if the input file is fasta or fastq
-    if TestFile.isFileZip(fileName) == True:
+    if TestFile.isFileZip(fileName):
         with gzip.open(fileName, "rb") as fn:
             line = fn.readline()
             if str(line)[2:].startswith("@"):
@@ -61,7 +61,7 @@ class BuildIndex:
         # and output them into a fasta file
         outputFile = open(self.output + ".fasta", "w")
 
-        if TestFile.isFileZip(self.reference) == True:
+        if TestFile.isFileZip(self.reference):
             with gzip.open(self.reference, "rt") as handle:
                 for rec in SeqIO.parse(handle, TestFile.fastaOrFastq(self.reference)):
                     if rec.id == self.homo or rec.id == self.hetero:

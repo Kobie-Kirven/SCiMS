@@ -124,7 +124,11 @@ def scims():
         combDf = combineDf(mergeDf,unmergedDf)
         filtSam = getSexSequences(human, args.homogametic, args.heterogametic, isFilter=False)
         update = readRescueUpdate(combDf,filtSam, 50)
-        countChrom(update)
+        chromCounts = countChrom(update, args.homogametic,args.heterogametic)
+        stats = calculateStats(chromCounts[0], chromCounts[1])
+        print("The proportion of {} reads to {} reads is:".format(args.heterogametic, args.homogametic))
+        print('{} u"\u00B1" {}'.format(stats[0], stats[1]))
+        print("Thank you for using SCiMS!")
         deleteTempFileList()
 
 

@@ -1,0 +1,3 @@
+[console_scripts]
+scims = src.__main__:scims
+

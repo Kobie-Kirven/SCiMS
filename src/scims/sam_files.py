@@ -13,6 +13,7 @@ class ParseSam:
             print(rec.query)
 
     """
+
     def __init__(self, samFile):
         self.samFile = samFile
 
@@ -22,7 +23,7 @@ class ParseSam:
 
     def __next__(self):
         line = self.fn.__next__()
-        while line.startswith("@") == True:
+        while line.startswith("@"):
             line = self.fn.__next__()
         samData = ReadSamLine(line)
         samData.getFeatures()
@@ -40,13 +41,13 @@ class ReadSamLine:
         self.samLine = samLine
 
     def getFeatures(self):
-        '''
+        """
         Takes a line from a SAM file as
         a string collects information
-        from the fields 
-        '''
+        from the fields
+        """
 
-        if self.samLine.startswith("@") == False:
+        if not self.samLine.startswith("@"):
             samFields = self.samLine.strip("\n").split("\t")
             self.query = samFields[0]
             self.flag = samFields[1]
@@ -71,33 +72,32 @@ class ReadSamLine:
             self.yt = None
             self.mismatch_ref_bases = None
 
-        if len(samFields) >= 10:
-            #If the file is a bowtie file, get the bowtie-specific
-            # fields in the SAM file
-            for field in samFields[10:]:
-                if "AS:i" in field:
-                    self.align_score = int(field.strip("AS:i"))
-                elif "XS:i" in field:
-                    self.align_score_best = int(field.strip("XS:i"))
-                elif "YS:i" in field:
-                    self.align_score_mate = int(field.strip("YS:i"))
-                elif "XN:i" in field:
-                    self.num_ambig = int(field.strip("XN:i"))
-                elif "XM:i" in field:
-                    self.mismatches = int(field.strip("XM:i"))
-                elif "XO:i" in field:
-                    self.gap_opens = int(field.strip("XO:i"))
-                elif "XG:i" in field:
-                    self.gap_ext = int(field.strip("XG:i"))
-                elif "NM:i" in field:
-                    self.edit_distance = int(field.strip("NM:i"))
-                elif "YF:Z" in field:
-                    self.why_filtered = int(field.strip("YF:Z"))
-                elif "YT:Z" in field:
-                    self.yt = field.strip("YT:Z")
-                elif "MD:Z" in field:
-                    self.mismatch_ref_bases = field.strip("MD:Z")
-
+            if len(samFields) >= 10:
+                # If the file is a bowtie file, get the bowtie-specific
+                # fields in the SAM file
+                for field in samFields[10:]:
+                    if "AS:i" in field:
+                        self.align_score = int(field.strip("AS:i"))
+                    elif "XS:i" in field:
+                        self.align_score_best = int(field.strip("XS:i"))
+                    elif "YS:i" in field:
+                        self.align_score_mate = int(field.strip("YS:i"))
+                    elif "XN:i" in field:
+                        self.num_ambig = int(field.strip("XN:i"))
+                    elif "XM:i" in field:
+                        self.mismatches = int(field.strip("XM:i"))
+                    elif "XO:i" in field:
+                        self.gap_opens = int(field.strip("XO:i"))
+                    elif "XG:i" in field:
+                        self.gap_ext = int(field.strip("XG:i"))
+                    elif "NM:i" in field:
+                        self.edit_distance = int(field.strip("NM:i"))
+                    elif "YF:Z" in field:
+                        self.why_filtered = int(field.strip("YF:Z"))
+                    elif "YT:Z" in field:
+                        self.yt = field.strip("YT:Z")
+                    elif "MD:Z" in field:
+                        self.mismatch_ref_bases = field.strip("MD:Z")
 
 
 def parseCigarStr(cigarStr):
@@ -116,9 +116,11 @@ def parseCigarStr(cigarStr):
                 raise Exception("Unexpected char in cigar string: {}".format(char))
     return cigarList
 
+
 def extractFromCigar(feature, cigar):
-    #Exract a speficied feature from a cigar string
+    # Exract a speficied feature from a cigar string
     return sum([match[1] for match in parseCigarStr(cigar) if match[0] == feature])
+
 
 def isFileGzip(fileName):
     """
@@ -130,17 +132,18 @@ def isFileGzip(fileName):
     else:
         return False
 
+
 def fastaOrFastq(fileName):
-    '''
+    """
     Checks if the input file is in fasta or fastq format
 
-    args: 
+    args:
     fileName(str): Name of the file to be checked
 
     returns: A string "fasta" if the file is a fasta
             file and "fastq" if if file is fastq
-    '''
-    if isFileGzip(fileName) == True:
+    """
+    if isFileGzip(fileName):
         with gzip.open(fileName, "rb") as fn:
             line = fn.readline()
             if str(line)[2:].startswith("@"):
