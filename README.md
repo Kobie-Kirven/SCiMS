@@ -19,13 +19,13 @@ data to a reference genome and calculating the proportion of reads that map
 to the heterogametic chromosome versus both sex chromosomes together. 
 ## Installation
 
-<h4>Requirements:</h4>
-* bwa 
-* bowtie2 
-* Flash 
-* Samtools
+### Requirements
+- bwa 
+- bowtie2 
+- Flash 
+- Samtools
 
-All of the required tools can be installed with conda (see [Install Requirements](#Install Requirements:))
+All of the required tools can be installed with conda (see [Install Requirements](#Install-Requirements))
 
 SCiMS can be easily installed with:
 ```bash
