@@ -36,7 +36,7 @@ pip3 install git+https://github.com/Kobie-Kirven/SCiMS
   The first step in using SCiMS is to build indices of the reference genome for
   BWA and Bowtie2. The ```build-index``` module makes it easy to build the indices
   for both tools with one command.
-    ```bash
+    ```
     usage: scims build-index [-h] [-r REFERENCE] [-o OUTPUT]
 
     optional arguments:
@@ -51,7 +51,7 @@ pip3 install git+https://github.com/Kobie-Kirven/SCiMS
   The ```determine-sex``` module will give an output of the proportion
   of reads that map to the homogametic chromosome versus both sex chromosomes. 
   This module requires that you already have the BWA/Bowtie2 indices built. 
-    ```bash
+    ```
     usage: scims determine-sex [-h] [-i INDEX] [-1 FORWARD] [-2 REVERSE] [-t THREADS] [-hom HOMOGAMETIC]
                                [-het HETEROGAMETIC]
     
