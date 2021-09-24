@@ -7,6 +7,7 @@
 import argparse
 from .scims import *
 from .scims.determine_sex import *
+import time
 
 
 def scims():
@@ -97,14 +98,36 @@ def scims():
         buildBowtie2Index(args.reference, args.output)
 
     elif args.command == "determine-sex":
+        print("Now aligning reads with BWA..")
+        timeStart = time.time()
         bwa = alignWithBwa(args.index, args.forward, args.reverse, args.threads)
+        timeStop = time.time()
+        print("BWA finished in {:.2f} seconds\n".format(timeStop - timeStart))
+
         human = getHumanSequences(bwa)
         sam = getSexSequences(human, args.homogametic, args.heterogametic)
         uniqueIds = getUniqueIdsInSam(sam)
         files = getFastqReadsInSam(uniqueIds, args.forward, args.reverse)
+
+        print("Now merging files with Flash...")
+        timeStart = time.time()
         merged = mergeWithFlash(files[0], files[1])
+        timeStop = time.time()
+        print("Flash finished in {:.2f} seconds\n".format(timeStop - timeStart))
+
+        print("Now aligning merged reads with Bowtie2...")
+        timeStart = time.time()
         mergeAligned = alignMergedWithBowtie2(args.index, merged[0])
+        timeStop = time.time()
+        print("Bowtie2 finished in {:.2f} seconds\n".format(timeStop - timeStart))
+
+        print("Now aligning unmerged reads with Bowtie2...")
+        timeStart = time.time()
         unmergeAligned = pairedReadsWithBowtie2(args.index, merged[1], merged[2])
+        timeStop = time.time()
+        print("Bowtie2 finished in {:.2f} seconds\n".format(timeStop - timeStart))
+
+        print("Preforming read rescue...")
         mergeDf = readRescueMerged(mergeAligned)
         unmergedDf = readRescueUnmerged(unmergeAligned)
         combDf = combineDf(mergeDf,unmergedDf)
@@ -113,7 +136,7 @@ def scims():
         chromCounts = countChrom(update, args.homogametic,args.heterogametic)
         stats = calculateStats(chromCounts[0], chromCounts[1])
         print("The proportion of {} reads to {} reads is:".format(args.heterogametic, args.homogametic))
-        print('{} \u00B1 {}'.format(stats[0], stats[1]))
+        print('{} \u00B1 {} (95% CI)'.format(stats[0], stats[1]))
         print("Thank you for using SCiMS!")
         deleteTempFileList()
 

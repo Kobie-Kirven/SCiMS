@@ -39,6 +39,7 @@ def deleteTempFileList():
     finally:
         pass
 
+
 def alignWithBwa(index, forwardReads, reverseReads, threads):
     """
         Align paired reads with BWA
@@ -48,7 +49,7 @@ def alignWithBwa(index, forwardReads, reverseReads, threads):
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
         subprocess.run(["bwa", "mem", "-t", threads, index,
-                        forwardReads, reverseReads], stdout=f)
+                        forwardReads, reverseReads], stdout=f, stderr=subprocess.DEVNULL)
         tempFilesList(f.name)
         return f.name
 
@@ -60,9 +61,10 @@ def getHumanSequences(inputSam):
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
         subprocess.run(["samtools", "view", "-F", "4",
-                        "-F", "8", "-b", inputSam], stdout=f)
+                        "-F", "8", "-b", inputSam], stdout=f, stderr=subprocess.DEVNULL)
         tempFilesList(f.name)
     return f.name
+
 
 def getSexSequences(inputBam, homogamete, heterogamete, isFilter=True, mapqMin=50, tlen=75):
     """
@@ -97,6 +99,7 @@ def getSexSequences(inputBam, homogamete, heterogamete, isFilter=True, mapqMin=5
             tempFilesList(g.name)
             return g.name
 
+
 def getUniqueIdsInSam(inputSam):
     """Get the unique query names from the SAM file"""
     readIds = []
@@ -106,6 +109,7 @@ def getUniqueIdsInSam(inputSam):
             line.getFeatures()
             readIds.append(line.query)
     return set(readIds)
+
 
 def getFastqReadsInSam(readIds, forwardReads, reverseReads):
     # Open output files
@@ -150,7 +154,7 @@ def mergeWithFlash(pair1, pair2, mismatchRatio=0.1, maxOverlap=150, minOverlap=4
     # Merge paired-end reads with flash
     tempdir = tempfile.TemporaryDirectory()
     subprocess.run(["flash", "-x", str(mismatchRatio), "-M", str(maxOverlap), "-m", str(minOverlap),
-                    pair1, pair2, "-d", tempdir.name])
+                    pair1, pair2, "-d", tempdir.name], stdout=subprocess.DEVNULL)
     merged = convertToTemp(tempdir.name + "/out.extendedFrags.fastq")
     unmerged1 = convertToTemp(tempdir.name + "/out.notCombined_1.fastq")
     unmerged2 = convertToTemp(tempdir.name + "/out.notCombined_2.fastq")
@@ -170,7 +174,7 @@ def alignMergedWithBowtie2(index, merged, threads=1, noOfAlignPerRead=50):
     """Align merged reads with bowtie2"""
     with tempfile.NamedTemporaryFile(delete=False) as f:
         subprocess.run(["bowtie2", "-p", str(threads), "-k", str(noOfAlignPerRead), "--local",
-                        "-x", index, "-U", merged], stdout=f)
+                        "-x", index, "-U", merged], stdout=f, stderr=subprocess.DEVNULL)
         tempFilesList(f.name)
         return f.name
 
@@ -179,7 +183,8 @@ def pairedReadsWithBowtie2(index, forwardReads, reverseReads, threads=1, noOfAli
     """Align paired reads with bowtie2"""
     with tempfile.NamedTemporaryFile(delete=False) as f:
         subprocess.run(["bowtie2", "-p", str(threads), "-k", str(noOfAlignPerRead), "--local",
-                        "-x", index, "-1", forwardReads, "-2", reverseReads], stdout=f)
+                        "-x", index, "-1", forwardReads, "-2", reverseReads], stdout=f,
+                       stderr=subprocess.DEVNULL)
         return f.name
 
 
@@ -257,24 +262,25 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
 
     for readData in fastqData:
         read_pair.append(readData)
-        if not read_pair:
-            if readData["samFlag"] & 2 == 2 and readData["samFlag"] & 64 == 64:
-                read_pair.append(readData)
+        if read_pair:
+            if abs(readData["insertSize"]) != abs(read_pair[0]["insertSize"]) or read_pair[0][
+                "chrom"] != readData["chrom"] or readData["readName"] != read_pair[0]["readName"]:
+                continue
+            read_pair.append(readData)
+            total_num_matches = read_pair[0]["numMatches"] + read_pair[1]["numMatches"]
+            total_num_mismatches = read_pair[0]["numMismatches"] + read_pair[1]["numMismatches"]
+            total_num_deletions = read_pair[0]["numDeletions"] + read_pair[1]["numDeletions"]
+            total_alignment_score = read_pair[0]["alignmentScore"] + read_pair[1]["alignmentScore"]
+            fastq_data.append({"readName": readData["readName"], "numMismatches": total_num_mismatches,
+                               "chrom": readData["chrom"],
+                               "numMatches": total_num_matches, "numDeletions": total_num_deletions,
+                               "insertSize": abs(readData["insertSize"]), "alignmentScore": total_alignment_score,
+                               "pos_1": read_pair[0]["pos"], "pos_2": read_pair[1]["pos"]})
+            read_pair = []
 
         else:
-            if (abs(readData["insertSize"]) == abs(read_pair[0]["insertSize"]) and readData["chrom"] == read_pair[0][
-                "chrom"] and readData["readName"] == read_pair[0]["readName"]):
+            if readData["samFlag"] & 2 == 2 and readData["samFlag"] & 64 == 64:
                 read_pair.append(readData)
-                total_num_matches = read_pair[0]["numMatches"] + read_pair[1]["numMatches"]
-                total_num_mismatches = read_pair[0]["numMismatches"] + read_pair[1]["numMismatches"]
-                total_num_deletions = read_pair[0]["numDeletions"] + read_pair[1]["numDeletions"]
-                total_alignment_score = read_pair[0]["alignmentScore"] + read_pair[1]["alignmentScore"]
-                fastq_data.append({"readName": readData["readName"], "numMismatches": total_num_mismatches,
-                                   "chrom": readData["chrom"],
-                                   "numMatches": total_num_matches, "numDeletions": total_num_deletions,
-                                   "insertSize": abs(readData["insertSize"]), "alignmentScore": total_alignment_score,
-                                   "pos_1": read_pair[0]["pos"], "pos_2": read_pair[1]["pos"]})
-                read_pair = []
 
     df_pair = pd.DataFrame(fastq_data)
     df_pair_unfilt = df_pair.copy(deep=True)
@@ -428,8 +434,9 @@ def countChrom(sam, hom, het):
             hetCounts += 1
     return homCounts, hetCounts
 
+
 def calculateStats(homogameticCounts, heterogameticCounts):
     """Calculate statics for sequence counts"""
     prop = heterogameticCounts / (homogameticCounts + heterogameticCounts)
-    ci = 1.96 * math.sqrt((prop * (1 - prop))/ (heterogameticCounts + homogameticCounts))
-    return round(prop,3), round(ci,3)
+    ci = 1.96 * math.sqrt((prop * (1 - prop)) / (heterogameticCounts + homogameticCounts))
+    return round(prop, 3), round(ci, 3)
