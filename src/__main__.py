@@ -5,7 +5,7 @@
 
 # imports
 import argparse
-from .scims import BuildIndex
+from .scims import *
 from .scims.determine_sex import *
 
 
@@ -25,7 +25,7 @@ def scims():
     #######################################
     build_index_parser = subparser.add_parser(
         "build-index",
-        help="Build indexes for bwa and bowtie2",
+        help="Build indexes for BWA and Bowtie2",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -35,18 +35,7 @@ def scims():
         dest="reference",
         help="Host reference genome in FASTA or FASTQ format",
     )
-    build_index_parser.add_argument(
-        "-hom",
-        "--homogametic",
-        dest="homogametic",
-        help="ID of homogametic sex chromesome (ex. X)",
-    )
-    build_index_parser.add_argument(
-        "-het",
-        "--heterogametic",
-        dest="heterogametic",
-        help="ID of heterogametic sex chromesome (ex. Y)",
-    )
+
     build_index_parser.add_argument(
         "-o", "--output", dest="output", help="Name of output index"
     )
@@ -104,11 +93,8 @@ def scims():
     args = parser.parse_args()
 
     if args.command == "build-index":
-        index = BuildIndex(
-            args.reference, args.homogametic, args.heterogametic, args.output
-        )
-        index.buildBwaIndex()
-        index.buildBowtie2Index()
+        buildBwaIndex(args.reference,  args.output)
+        buildBowtie2Index(args.reference, args.output)
 
     elif args.command == "determine-sex":
         bwa = alignWithBwa(args.index, args.forward, args.reverse, args.threads)
