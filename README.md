@@ -78,4 +78,28 @@ conda install -c bioconda flash
 conda install -c bioconda bowtie2
 conda install -c bioconda samtools
 ```
+Note: For some reason, the current version of Bowtie2 has an issue with tbb. To fix this, 
+run 
+```bash
+
+```
 ## Quick Tutorial
+This tutorial is intended to ensure that SCiMS is working correctly. 
+1. Download test FASTQ files:
+   ```bash
+   wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/male_1.fastq.gz
+   wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/male_2.fastq.gz
+   ```
+2. Download human reference genome from NCBI:
+   ```bash
+   wget https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh38_latest/refseq_identifiers/GRCh38_latest_genomic.fna.gz
+   ```
+3. Build reference indices for BWA and Bowite2:
+   ```bash
+   scims build-index -r GRCh38_latest_genomic.fna.gz -o GRCh38_latest_genomic.fna.gz
+   ```
+4. Determine the sex:
+   ```bash
+   scims determine-sex -i GRCh38_latest_genomic.fna.gz -1 male_1.fastq.gz \
+   -2 male_2.fastq.gz -t 2 -hom "NC_000023.11" -het "NC_000024.10"
+   ```
