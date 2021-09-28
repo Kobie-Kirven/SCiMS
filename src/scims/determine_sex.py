@@ -1,5 +1,5 @@
 # Author: Kobie Kirven, Kyle McGovern
-# Davenport Lab - Penn State University
+# Davenport Lab - Pennsylvania State University
 # Date: 9-2-2021
 
 # Imports
@@ -42,14 +42,23 @@ def deleteTempFileList():
 
 def alignWithBwa(index, forwardReads, reverseReads, threads):
     """
-        Align paired reads with BWA
+        Align paired-end reads with BWA
 
         Parameters:
-            index (str):
+            index (str): prefix for BWA index
+            forwardReads (str): path to file with forward FASTQ reads
+            reverseReads (str): path to file with reverse FASTQ reads
+            threads (int): number of threads to use
+
+        Returns:
+            f.name (str): Path to output SAM file
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        subprocess.run(["bwa", "mem", "-t", threads, index,
-                        forwardReads, reverseReads], stdout=f, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["bwa", "mem", "-t", threads, index, forwardReads, reverseReads],
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+        )
         tempFilesList(f.name)
         return f.name
 
@@ -58,22 +67,45 @@ def getHumanSequences(inputSam):
     """
     Get the sequences from BWA alignment output
     that map to the human genome
+
+    Parameters:
+        inputSam (str): Path to input SAM file
+
+    Returns:
+        f.name (str): Path to output BAM file
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        subprocess.run(["samtools", "view", "-F", "4",
-                        "-F", "8", "-b", inputSam], stdout=f, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["samtools", "view", "-F", "4", "-F", "8", "-b", inputSam],
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+        )
         tempFilesList(f.name)
     return f.name
 
 
-def getSexSequences(inputBam, homogamete, heterogamete, isFilter=True, mapqMin=50, tlen=75):
+def getSexSequences(
+    inputBam, homogamete, heterogamete, isFilter=True, mapqMin=50, tlen=75
+):
     """
-    Input two strings for the homogametic element and one for the
-    heterogametic element
+    Get the sequences that map to the sex chromosomes
+
+    Parameters:
+        inputBam (str): Path to input BAM file
+        homogamete (str): FASTA ID for homogametic element
+        heterogamete (str): FASTA ID for heterogametic element
+        isFilter (bool): Filter reads based on quality thresholds
+        mapqMin (int): Minimum mapq score
+        tlen (int): Template length
+
+    Returns:
+        g.name (str): Path to SAM file with reads that mapped to sex chromosomes
+
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        smallSam = subprocess.run(["samtools", "view", "-F", "2048", "-F", "256", inputBam],
-                                  stdout=f)
+        smallSam = subprocess.run(
+            ["samtools", "view", "-F", "2048", "-F", "256", inputBam], stdout=f
+        )
         name = f.name
         tempFilesList(f.name)
 
@@ -101,7 +133,15 @@ def getSexSequences(inputBam, homogamete, heterogamete, isFilter=True, mapqMin=5
 
 
 def getUniqueIdsInSam(inputSam):
-    """Get the unique query names from the SAM file"""
+    """
+    Get the unique query names from the SAM file
+
+    Parameters:
+        inputSam (str): Path to input SAM file
+
+    returns:
+        (list): Set of unique FASTA IDs
+    """
     readIds = []
     with open(inputSam) as fn:
         for rec in fn:
@@ -112,8 +152,24 @@ def getUniqueIdsInSam(inputSam):
 
 
 def getFastqReadsInSam(readIds, forwardReads, reverseReads):
+    """
+    Get FASTQ reads for sequences in SAM file
+
+    Parameters:
+        readIds (list): List of FASTA IDs
+        forwardReads (str): Path to forward FASTQ reads
+        reverseReads (str): Path to reverse FASTQ reads
+
+    Returns:
+        outFastq1.name (str): Path to output forward FASTQ file
+        outFastq2.name (str): Path to output reverse FASTQ file
+    """
+
     # Open output files
-    outFastq1, outFastq2 = tempfile.NamedTemporaryFile(delete=False), tempfile.NamedTemporaryFile(delete=False)
+    outFastq1, outFastq2 = (
+        tempfile.NamedTemporaryFile(delete=False),
+        tempfile.NamedTemporaryFile(delete=False),
+    )
 
     # Get whether the file is FASTA or FASTQ
     fileType = fastaOrFastq(forwardReads)
@@ -151,10 +207,38 @@ def getFastqReadsInSam(readIds, forwardReads, reverseReads):
 
 
 def mergeWithFlash(pair1, pair2, mismatchRatio=0.1, maxOverlap=150, minOverlap=40):
-    # Merge paired-end reads with flash
+    """
+    Merge paired-end reads with FLASH
+
+    Parameters:
+        pair1 (str): Path to forward FASTQ file
+        pair2 (str): Path to reverse FASTQ file
+        mismatchRatio (float): Maximum mismatch ratio
+        maxOverlap (int): Maximum overlap for read merger
+        minOverlap (int): Minimum overlap for read merger
+
+    Returns:
+        merged (str): Path to merged FASTQ file
+        unmerged1 (str): Path to forward, unmerged FASTQ file
+        unmerged2 (str): Path to reverse, unmerged FASTQ file
+    """
     tempdir = tempfile.TemporaryDirectory()
-    subprocess.run(["flash", "-x", str(mismatchRatio), "-M", str(maxOverlap), "-m", str(minOverlap),
-                    pair1, pair2, "-d", tempdir.name], stdout=subprocess.DEVNULL)
+    subprocess.run(
+        [
+            "flash",
+            "-x",
+            str(mismatchRatio),
+            "-M",
+            str(maxOverlap),
+            "-m",
+            str(minOverlap),
+            pair1,
+            pair2,
+            "-d",
+            tempdir.name,
+        ],
+        stdout=subprocess.DEVNULL,
+    )
     merged = convertToTemp(tempdir.name + "/out.extendedFrags.fastq")
     unmerged1 = convertToTemp(tempdir.name + "/out.notCombined_1.fastq")
     unmerged2 = convertToTemp(tempdir.name + "/out.notCombined_2.fastq")
@@ -162,7 +246,15 @@ def mergeWithFlash(pair1, pair2, mismatchRatio=0.1, maxOverlap=150, minOverlap=4
 
 
 def convertToTemp(oldFile):
-    """Convert the outputs from Flash into temporary files"""
+    """
+    Convert a file into a temporary file
+
+    Parameters:
+        oldFile (str): Path to input file
+
+    Returns:
+        f.name (str): Path to output temporary file
+    """
     with open(oldFile) as fn:
         with tempfile.NamedTemporaryFile(delete=False) as f:
             for line in fn:
@@ -171,25 +263,88 @@ def convertToTemp(oldFile):
 
 
 def alignMergedWithBowtie2(index, merged, threads=1, noOfAlignPerRead=50):
-    """Align merged reads with bowtie2"""
+    """
+    Align merged reads with bowtie2
+
+    Parameters:
+        index (str): Prefix for Bowite2 index
+        merged (str): Path to FLASH merged, FASTQ reads
+        threads (int): Number of threads to use
+        noOfAlignPerRead (int): Maximum number of alignments per-read
+
+    Returns:
+        f.name (str): Path to output SAM file
+    """
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        subprocess.run(["bowtie2", "-p", str(threads), "-k", str(noOfAlignPerRead), "--local",
-                        "-x", index, "-U", merged], stdout=f, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            [
+                "bowtie2",
+                "-p",
+                str(threads),
+                "-k",
+                str(noOfAlignPerRead),
+                "--local",
+                "-x",
+                index,
+                "-U",
+                merged,
+            ],
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+        )
         tempFilesList(f.name)
         return f.name
 
 
-def pairedReadsWithBowtie2(index, forwardReads, reverseReads, threads=1, noOfAlignPerRead=50):
-    """Align paired reads with bowtie2"""
+def pairedReadsWithBowtie2(
+    index, forwardReads, reverseReads, threads=1, noOfAlignPerRead=50
+):
+    """
+    Align paired reads with bowtie2
+
+    Parameters:
+        index (str): Prefix for Bowite2 index
+        forwardReads (str): Path to forward FASTQ reads
+        reverseReads (str): Path to reverse FASTq reads
+        threads (int): Number of threads to use
+        noOfAlignPerRead (int): Maximum number of alignments per-read
+
+    Returns:
+        f.name (str): Path to output SAM file
+    """
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        subprocess.run(["bowtie2", "-p", str(threads), "-k", str(noOfAlignPerRead), "--local",
-                        "-x", index, "-1", forwardReads, "-2", reverseReads], stdout=f,
-                       stderr=subprocess.DEVNULL)
+        subprocess.run(
+            [
+                "bowtie2",
+                "-p",
+                str(threads),
+                "-k",
+                str(noOfAlignPerRead),
+                "--local",
+                "-x",
+                index,
+                "-1",
+                forwardReads,
+                "-2",
+                reverseReads,
+            ],
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+        )
         return f.name
 
 
 def getReadDataFromMergedSam(samFile):
-    """Get data from the SAM file of merged reads"""
+    """
+    Get data from the SAM file of merged reads
+
+    Parameters:
+        samFile (str): Path to input SAM file
+
+    Returns:
+        fastqData (list): A list of dictionaries where each element
+                            corresponds to each line in the SAM file
+    """
     fastqData = []
     for rec in ParseSam(samFile):
         if rec.cigar != "*":
@@ -197,50 +352,99 @@ def getReadDataFromMergedSam(samFile):
             numDeletions = extractFromCigar("D", rec.cigar)
 
             if rec.flag != 4 and rec.flag != 8:
-                readData = {"readName": rec.query, "chrom": rec.rnam,
-                            "alignmentScore": rec.align_score, "numMismatches": rec.mismatches,
-                            "insertSize": None, "pos_1": rec.pos, "pos_2": -1,
-                            "numMatches": numMatches, "numDeletions": numDeletions}
+                readData = {
+                    "readName": rec.query,
+                    "chrom": rec.rnam,
+                    "alignmentScore": rec.align_score,
+                    "numMismatches": rec.mismatches,
+                    "insertSize": None,
+                    "pos_1": rec.pos,
+                    "pos_2": -1,
+                    "numMatches": numMatches,
+                    "numDeletions": numDeletions,
+                }
 
                 fastqData.append(readData)
     return fastqData
 
 
 def getReadDataFromUnmergedSam(unmergedSam):
+    """
+    Get data from SAM file of unmerged reads
+
+    Parameters:
+        unmergedSam (str): Path to input SAM file
+
+    Returns:
+        fastqData (list): List of dictionaries where each element
+                            in the list corresponds to a line in
+                            the SAM file
+    """
     fastqData = []
     for rec in ParseSam(unmergedSam):
         if rec.cigar != "*":
             numMatches = extractFromCigar("M", rec.cigar)
             numDeletions = extractFromCigar("D", rec.cigar)
-            readData = {"readName": rec.query, "samFlag": rec.flag, "chrom": rec.rnam,
-                        "alignmentScore": rec.align_score, "numMismatches": rec.mismatches,
-                        "mateStart": rec.pnext, "insertSize": rec.tlen, "pos": rec.pos,
-                        "numMatches": numMatches, "numDeletions": numDeletions}
+            readData = {
+                "readName": rec.query,
+                "samFlag": rec.flag,
+                "chrom": rec.rnam,
+                "alignmentScore": rec.align_score,
+                "numMismatches": rec.mismatches,
+                "mateStart": rec.pnext,
+                "insertSize": rec.tlen,
+                "pos": rec.pos,
+                "numMatches": numMatches,
+                "numDeletions": numDeletions,
+            }
             fastqData.append(readData)
     return fastqData
 
 
-def readRescueMerged(mergedSam, diffFromMaxPercent=0.025,
-                     minMatch=74, mismatchRatio=0.025, numDeletions=3):
+def readRescueMerged(
+    mergedSam,
+    diffFromMaxPercent=0.025,
+    minMatch=74,
+    mismatchRatio=0.025,
+    numDeletions=3,
+):
+    """
+    Preform 'read rescue' on the merged reads
+
+    Parameters:
+         mergedSam (str): Path to SAM file of merged reads
+         diffFromMaxPercent (float): Maximum difference in alignment quality between
+                                    a given read and the best alignment for that read
+        minMatch (int): Minimum number of bases matching between the query and reference
+        mismatchRatio (float): Maximum ratio of matches to mismatches between query
+                                and reference
+        numDeletions (float): Maximum number of deletions
+
+    Returns:
+        df (pandas data frame): Data frame with info for sequences that survived read rescue
+    """
     fastqData = getReadDataFromMergedSam(mergedSam)
 
     if fastqData:
         # Transform the fastqData into a pandas dataframe
         df = pd.DataFrame(fastqData)
-        df_unfilt = df.copy(deep=True)
 
-        # Filter reads that arent within a certian quality percentage
+        # Filter reads that arent within a certain quality percentage
         # from the maximum scoring alignment for each read
         df["maxScoreReadName"] = df.groupby("readName")["alignmentScore"].transform(max)
-        df["diffPercentMaxRound"] = np.round(df["maxScoreReadName"] * diffFromMaxPercent)
+        df["diffPercentMaxRound"] = np.round(
+            df["maxScoreReadName"] * diffFromMaxPercent
+        )
         df["scoreMaxDiff"] = df["maxScoreReadName"] - df["alignmentScore"]
         df = df[df["scoreMaxDiff"] <= df["diffPercentMaxRound"]]
 
-        # Filter out reads with less than a certian number of bases matching.
+        # Filter out reads with less than a certain number of bases matching.
         df = df[df["numMatches"] > minMatch]
 
         # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
-        df["mismatchRatio"] = df["numMismatches"].astype(float) / df["numMatches"].astype(float)
+        df["mismatchRatio"] = df["numMismatches"].astype(float) / df[
+            "numMatches"
+        ].astype(float)
         df = df[df["mismatchRatio"] < mismatchRatio]
 
         # Filter out reads with too many deletions.
@@ -255,7 +459,26 @@ def readRescueMerged(mergedSam, diffFromMaxPercent=0.025,
         return False
 
 
-def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numDeletions=3):
+def readRescueUnmerged(
+    unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numDeletions=3
+):
+    """"
+    Preform 'read rescue' for unmerged (paired-end) sequences
+
+    Parameters:
+        unmergedSam (str): Path to SAM file of unmerged reads
+        diffFromMaxPercent (float): Maximum difference in alignment quality between
+                                    a given read and the best alignment for that read
+        minMatch (int): Minimum number of bases matching between the query and reference
+        mismatchRatio (float): Maximum ratio of matches to mismatches between query
+                                and reference
+        numDeletions (float): Maximum number of deletions
+
+    Returns:
+        df_pair (pandas data frame): Data frame with data for reads that survived
+                                    read rescue
+
+    """
     read_pair = []
     fastq_data = []
     fastqData = getReadDataFromUnmergedSam(unmergedSam)
@@ -263,19 +486,36 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
     for readData in fastqData:
         read_pair.append(readData)
         if read_pair:
-            if abs(readData["insertSize"]) != abs(read_pair[0]["insertSize"]) or read_pair[0][
-                "chrom"] != readData["chrom"] or readData["readName"] != read_pair[0]["readName"]:
+            if (
+                abs(readData["insertSize"]) != abs(read_pair[0]["insertSize"])
+                or read_pair[0]["chrom"] != readData["chrom"]
+                or readData["readName"] != read_pair[0]["readName"]
+            ):
                 continue
             read_pair.append(readData)
             total_num_matches = read_pair[0]["numMatches"] + read_pair[1]["numMatches"]
-            total_num_mismatches = read_pair[0]["numMismatches"] + read_pair[1]["numMismatches"]
-            total_num_deletions = read_pair[0]["numDeletions"] + read_pair[1]["numDeletions"]
-            total_alignment_score = read_pair[0]["alignmentScore"] + read_pair[1]["alignmentScore"]
-            fastq_data.append({"readName": readData["readName"], "numMismatches": total_num_mismatches,
-                               "chrom": readData["chrom"],
-                               "numMatches": total_num_matches, "numDeletions": total_num_deletions,
-                               "insertSize": abs(readData["insertSize"]), "alignmentScore": total_alignment_score,
-                               "pos_1": read_pair[0]["pos"], "pos_2": read_pair[1]["pos"]})
+            total_num_mismatches = (
+                read_pair[0]["numMismatches"] + read_pair[1]["numMismatches"]
+            )
+            total_num_deletions = (
+                read_pair[0]["numDeletions"] + read_pair[1]["numDeletions"]
+            )
+            total_alignment_score = (
+                read_pair[0]["alignmentScore"] + read_pair[1]["alignmentScore"]
+            )
+            fastq_data.append(
+                {
+                    "readName": readData["readName"],
+                    "numMismatches": total_num_mismatches,
+                    "chrom": readData["chrom"],
+                    "numMatches": total_num_matches,
+                    "numDeletions": total_num_deletions,
+                    "insertSize": abs(readData["insertSize"]),
+                    "alignmentScore": total_alignment_score,
+                    "pos_1": read_pair[0]["pos"],
+                    "pos_2": read_pair[1]["pos"],
+                }
+            )
             read_pair = []
 
         else:
@@ -283,14 +523,17 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
                 read_pair.append(readData)
 
     df_pair = pd.DataFrame(fastq_data)
-    df_pair_unfilt = df_pair.copy(deep=True)
 
     # Filter reads with big insert size (gt 999)
     df_pair = df_pair[df_pair["insertSize"] < 1000]
 
     # Filter out reads less than 2.5% max score.
-    df_pair["maxScoreReadName"] = df_pair.groupby("readName")["alignmentScore"].transform(max)
-    df_pair["diffPercentMaxRound"] = np.round(df_pair["maxScoreReadName"] * diffFromMaxPercent)
+    df_pair["maxScoreReadName"] = df_pair.groupby("readName")[
+        "alignmentScore"
+    ].transform(max)
+    df_pair["diffPercentMaxRound"] = np.round(
+        df_pair["maxScoreReadName"] * diffFromMaxPercent
+    )
     df_pair["scoreMaxDiff"] = df_pair["maxScoreReadName"] - df_pair["alignmentScore"]
     df_pair = df_pair[df_pair["scoreMaxDiff"] <= df_pair["diffPercentMaxRound"]]
 
@@ -298,7 +541,9 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
     df_pair = df_pair[df_pair["numMatches"] >= minMatch]
 
     # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
-    df_pair["mismatchRatio"] = df_pair["numMismatches"].astype(float) / df_pair["numMatches"].astype(float)
+    df_pair["mismatchRatio"] = df_pair["numMismatches"].astype(float) / df_pair[
+        "numMatches"
+    ].astype(float)
     df_pair = df_pair[df_pair["mismatchRatio"] < 0.025]
 
     # Filter out reads with too many deletions.
@@ -308,10 +553,21 @@ def readRescueUnmerged(unmergedSam, diffFromMaxPercent=0.025, minMatch=100, numD
     mapper = df_pair.groupby("readName")["chrom"].nunique().to_dict()
     df_pair["uniqueChroms"] = df_pair["readName"].map(mapper)
     df_pair = df_pair[df_pair["uniqueChroms"] == 1]
+    return df_pair
 
 
 def combineDf(df1, df2):
-    """Combine 2 pandas data frames"""
+    """
+    Combine 2 pandas data frames
+
+    Parameters:
+        df1 (pandas data frame): Data frame 1
+        df2 (pandas data frame): Data frame 2
+
+    Returns:
+        (pandas df): Concatenated data frame
+
+    """
     return pd.concat([df1, df2])
 
 
@@ -332,6 +588,17 @@ def bam2sam(bamFile):
 
 
 def readRescueUpdate(df, inBam, minMapq):
+    """
+    Preform 'read rescue update'
+
+    Parameters:
+        df (pandas data frame): data frame from combineDf()
+        inBam (str): path to input BAM file
+        minMapq (int): Minimum mapq score
+
+    Returns:
+        out_sam.name (str): Path to output SAM
+    """
     ok_reads = set()
     seen_starts = set()
     seen_ends = set()
@@ -436,7 +703,20 @@ def countChrom(sam, hom, het):
 
 
 def calculateStats(homogameticCounts, heterogameticCounts):
-    """Calculate statics for sequence counts"""
+    """
+    Calculate statistics for sequence counts
+
+    Parameters:
+        homogameticCounts (int): Number of reads that mapped to homogametic element
+        heterogameticCounts (int): Number of reads that mapped to heterogametic element
+
+    Returns:
+        round(prop, 3) (float): Proportion of heterogametic to homogametic reads
+                                rounded to 3 decimal places
+        round(ci, 3) (float): Confidence interval for read proportions
+    """
     prop = heterogameticCounts / (homogameticCounts + heterogameticCounts)
-    ci = 1.96 * math.sqrt((prop * (1 - prop)) / (heterogameticCounts + homogameticCounts))
+    ci = 1.96 * math.sqrt(
+        (prop * (1 - prop)) / (heterogameticCounts + homogameticCounts)
+    )
     return round(prop, 3), round(ci, 3)
