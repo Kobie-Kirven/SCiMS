@@ -60,6 +60,9 @@ class TestDetermineSex(unittest.TestCase):
         self.assertEqual(calculate_stats(2313, 1219)[0], 0.345)
         self.assertEqual(calculate_stats(2313, 1219)[1], 0.016)
 
+    def test_verify_sam_file(self):
+        self.assertEqual(verify_sam_file("test_sam.sam"), True)
+        self.assertEqual(verify_sam_file("test_sam_bad.sam"), False)
 
 if __name__ == "__main__":
     test = unittest.TestDetermineSex()
@@ -67,3 +70,5 @@ if __name__ == "__main__":
     test.test_not_close_to_max()
     test.test_tempFilesList()
     test.test_check_bwa_inde()
+    test.test_verify_sam_file()
+

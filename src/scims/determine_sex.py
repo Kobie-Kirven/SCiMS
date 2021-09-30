@@ -102,6 +102,28 @@ def align_with_bwa(index, forward_reads, reverse_reads, threads):
         temp_files_list(f.name)
         return f.name
 
+def verify_sam_file(sam_file):
+    """
+    Verify that the SAM file is valid
+
+    Parameters:
+        sam_file (str): Path to SAM file
+
+    Returns:
+        (bool): Whether the SAM file is valid or not
+    """
+    with open(sam_file) as fn:
+        flag = False
+        for line in fn:
+            if line.startswith("@"):
+                continue
+            else:
+                flag = True
+                if len(line.split("\t")) >= 11:
+                    return True
+                else:
+                    return False
+        return flag
 
 def get_human_sequences(input_sam):
     """
@@ -115,13 +137,16 @@ def get_human_sequences(input_sam):
         f.name (str): Path to output BAM file
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
-        subprocess.run(
-            ["samtools", "view", "-F", "4", "-F", "8", "-b", input_sam],
-            stdout=f,
-            stderr=subprocess.DEVNULL,
-        )
-        temp_files_list(f.name)
-    return f.name
+        if verify_sam_file(input_sam):
+            subprocess.run(
+                ["samtools", "view", "-F", "4", "-F", "8", "-b", input_sam],
+                stdout=f,
+                stderr=subprocess.DEVNULL,
+            )
+            temp_files_list(f.name)
+            return f.name
+        else:
+            raise Exception("Not a valid SAM file")
 
 
 def get_sex_sequences(

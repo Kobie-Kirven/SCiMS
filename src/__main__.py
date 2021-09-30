@@ -123,7 +123,7 @@ def scims():
 
         print("Preforming read rescue...")
         mergeDf = filter_merged_sam(mergeAligned)
-        
+
         unmergedDf = read_rescue_unmerged(unmergeAligned)
         combDf = combine_df(mergeDf, unmergedDf)
         filtSam = get_sex_sequences(
