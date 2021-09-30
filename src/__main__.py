@@ -35,10 +35,12 @@ def scims():
         "--reference",
         dest="reference",
         help="Host reference genome in FASTA or FASTQ format",
+        required=True
     )
 
     build_index_parser.add_argument(
-        "-o", "--output", dest="output", help="Name of output index"
+        "-o", "--output", dest="output", help="Name of output index",
+        required=True
     )
 
     ######################################
@@ -52,6 +54,7 @@ def scims():
 
     determine_sex_parser.add_argument(
         "-i", "--index-name", dest="index", help="Name of bowtie2 and bwa index",
+        required=True
     )
 
     determine_sex_parser.add_argument(
@@ -59,6 +62,7 @@ def scims():
         "--forward-reads",
         dest="forward",
         help="Forward reads in fasta or fastq format",
+        required=True
     )
 
     determine_sex_parser.add_argument(
@@ -66,10 +70,12 @@ def scims():
         "--reverse-reads",
         dest="reverse",
         help="Reverse reads in fasta or fastq format",
+        required=True
     )
 
     determine_sex_parser.add_argument(
         "-t", "--number-of-threads", dest="threads", help="Number of threads to use",
+        required=True
     )
 
     determine_sex_parser.add_argument(
@@ -77,12 +83,14 @@ def scims():
         "--homogametic",
         dest="homogametic",
         help="ID of homogametic sex chromesome (ex. X)",
+        required="True"
     )
     determine_sex_parser.add_argument(
         "-het",
         "--heterogametic",
         dest="heterogametic",
         help="ID of heterogametic sex chromesome (ex. Y)",
+        required="True"
     )
 
     args = parser.parse_args()
