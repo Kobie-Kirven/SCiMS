@@ -14,7 +14,8 @@ def buildBwaIndex(inputFile, outputName):
         inputFile (str): path to reference genome FASTA file
         outputName (str): prefix for the BWA index
     """
-    subprocess.run(["bwa index " +  inputFile + " " + outputName], shell=True)
+    subprocess.run(["bwa index " + inputFile + " " + outputName], shell=True)
+
 
 def buildBowtie2Index(inputFile, outputName):
     """

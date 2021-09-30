@@ -50,9 +50,9 @@ class ReadSamLine:
         if not self.samLine.startswith("@"):
             samFields = self.samLine.strip("\n").split("\t")
             self.query = samFields[0]
-            self.flag = samFields[1]
+            self.flag = int(samFields[1])
             self.rnam = samFields[2]
-            self.pos = samFields[3]
+            self.pos = int(samFields[3])
             self.mapq = int(samFields[4])
             self.cigar = samFields[5]
             self.rnext = samFields[6]
@@ -138,7 +138,7 @@ def fastaOrFastq(fileName):
     Checks if the input file is in fasta or fastq format
 
     args:
-    fileName(str): Name of the file to be checked
+    file_name(str): Name of the file to be checked
 
     returns: A string "fasta" if the file is a fasta
             file and "fastq" if if file is fastq

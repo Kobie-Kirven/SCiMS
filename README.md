@@ -81,7 +81,7 @@ conda install -c bioconda samtools
 Note: For some reason, the current version of Bowtie2 has an issue with tbb. To fix this, 
 run 
 ```bash
-
+conda install tbb=2020.2
 ```
 ## Quick Tutorial
 This tutorial is intended to ensure that SCiMS is working correctly. 

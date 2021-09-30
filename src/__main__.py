@@ -51,10 +51,7 @@ def scims():
     )
 
     determine_sex_parser.add_argument(
-        "-i",
-        "--index-name",
-        dest="index",
-        help="Name of bowtie2 and bwa index",
+        "-i", "--index-name", dest="index", help="Name of bowtie2 and bwa index",
     )
 
     determine_sex_parser.add_argument(
@@ -72,10 +69,7 @@ def scims():
     )
 
     determine_sex_parser.add_argument(
-        "-t",
-        "--number-of-threads",
-        dest="threads",
-        help="Number of threads to use",
+        "-t", "--number-of-threads", dest="threads", help="Number of threads to use",
     )
 
     determine_sex_parser.add_argument(
@@ -94,50 +88,55 @@ def scims():
     args = parser.parse_args()
 
     if args.command == "build-index":
-        buildBwaIndex(args.reference,  args.output)
+        buildBwaIndex(args.reference, args.output)
         buildBowtie2Index(args.reference, args.output)
 
     elif args.command == "determine-sex":
         print("Now aligning reads with BWA..")
         timeStart = time.time()
-        bwa = alignWithBwa(args.index, args.forward, args.reverse, args.threads)
+        bwa = align_with_bwa(args.index, args.forward, args.reverse, args.threads)
         timeStop = time.time()
         print("BWA finished in {:.2f} seconds\n".format(timeStop - timeStart))
 
-        human = getHumanSequences(bwa)
-        sam = getSexSequences(human, args.homogametic, args.heterogametic)
-        uniqueIds = getUniqueIdsInSam(sam)
-        files = getFastqReadsInSam(uniqueIds, args.forward, args.reverse)
+        human = get_human_sequences(bwa)
+        sam = get_sex_sequences(human, args.homogametic, args.heterogametic)
+        uniqueIds = get_unique_ids_in_sam(sam)
+        files = get_fastq_reads_in_sam(uniqueIds, args.forward, args.reverse)
 
         print("Now merging files with Flash...")
         timeStart = time.time()
-        merged = mergeWithFlash(files[0], files[1])
+        merged = merge_with_flash(files[0], files[1])
         timeStop = time.time()
         print("Flash finished in {:.2f} seconds\n".format(timeStop - timeStart))
 
         print("Now aligning merged reads with Bowtie2...")
         timeStart = time.time()
-        mergeAligned = alignMergedWithBowtie2(args.index, merged[0])
+        mergeAligned = align_merged_with_bowtie2(args.index, merged[0])
         timeStop = time.time()
         print("Bowtie2 finished in {:.2f} seconds\n".format(timeStop - timeStart))
 
         print("Now aligning unmerged reads with Bowtie2...")
         timeStart = time.time()
-        unmergeAligned = pairedReadsWithBowtie2(args.index, merged[1], merged[2])
+        unmergeAligned = paired_reads_with_bowtie2(args.index, merged[1], merged[2])
         timeStop = time.time()
         print("Bowtie2 finished in {:.2f} seconds\n".format(timeStop - timeStart))
 
         print("Preforming read rescue...")
-        mergeDf = readRescueMerged(mergeAligned)
-        unmergedDf = readRescueUnmerged(unmergeAligned)
-        combDf = combineDf(mergeDf,unmergedDf)
-        filtSam = getSexSequences(human, args.homogametic, args.heterogametic, isFilter=False)
-        update = readRescueUpdate(combDf,filtSam, 50)
-        chromCounts = countChrom(update, args.homogametic,args.heterogametic)
-        stats = calculateStats(chromCounts[0], chromCounts[1])
-        print("The proportion of {} reads to {} reads is:".format(args.heterogametic, args.homogametic))
-        print('{} \u00B1 {} (95% CI)'.format(stats[0], stats[1]))
+        mergeDf = filter_merged_sam(mergeAligned)
+        
+        unmergedDf = read_rescue_unmerged(unmergeAligned)
+        combDf = combine_df(mergeDf, unmergedDf)
+        filtSam = get_sex_sequences(
+            human, args.homogametic, args.heterogametic, is_filter=False
+        )
+        update = read_rescue_update(combDf, filtSam, 50)
+        chromCounts = count_chrom(update, args.homogametic, args.heterogametic)
+        stats = calculate_stats(chromCounts[0], chromCounts[1])
+        print(
+            "The proportion of {} reads to {} reads is:".format(
+                args.heterogametic, args.homogametic
+            )
+        )
+        print("{} \u00B1 {} (95% CI)".format(stats[0], stats[1]))
         print("Thank you for using SCiMS!")
-        deleteTempFileList()
-
-
+        delete_temp_file_list()
