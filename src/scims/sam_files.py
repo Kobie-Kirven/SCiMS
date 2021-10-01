@@ -2,7 +2,8 @@
 # Davenport Lab - Penn State University
 # Date: 9-2-2021
 import gzip
-
+import subprocess
+import tempfile
 
 class ParseSam:
     """Parse a SAM file and return a SAM record
@@ -161,3 +162,25 @@ def fastaOrFastq(fileName):
                 return "fasta"
             else:
                 raise IOError
+
+
+def decompose_sam_flag(flag):
+    """
+    Decompose SAM flag into its component parts
+
+    Parameters:
+        flag(int): Sam flag
+
+    Returns:
+        (list): Elements of sam flag
+    """
+    out_list = []
+    flag_list = ["PAIRED", "PROPER_PAIR", "UNMAP", "MUNMAP",
+                 "REVERSE", "MREVERSE", "READ1", "READ2",
+                 "SECONDARY", "QCFAIL", "DUP", "SUPPLEMENTARY"]
+
+    binary = str(f"{flag:b}"[::-1])
+    for i in range(len(binary)):
+        if binary[i] == "1":
+            out_list.append(flag_list[i])
+    return out_list

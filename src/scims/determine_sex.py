@@ -413,7 +413,7 @@ def get_read_data_from_merged_sam(sam_file):
             num_matches = extractFromCigar("M", rec.cigar)
             num_deletions = extractFromCigar("D", rec.cigar)
 
-            if rec.flag != 4 and rec.flag != 8:
+            if "UNMAP" not in decompose_sam_flag(rec.flag) and "MUNMAP" not in decompose_sam_flag(rec.flag):
                 read_data = {
                     "read_name": rec.query,
                     "chrom": rec.rnam,
@@ -505,7 +505,14 @@ def min_num_of_matches(pandas_df, min_match):
 
 def too_many_mismatch(pandas_df, mismatch_ratio):
     """
+    Filter out alignments that have too many mismatches
 
+    Parameters:
+        pandas_df (pandas data frame): Pandas data frame with read information
+        mismatch_ratio (float): Ratio of mismatches to matches
+
+    Returns:
+        (pandas data frame): Filtered pandas data frame
     """
     pandas_df["mismatch_ratio"] = pandas_df["num_mismatches"].astype(float) / pandas_df[
         "num_matches"
@@ -515,14 +522,14 @@ def too_many_mismatch(pandas_df, mismatch_ratio):
 
 def too_many_deletions(pandas_df, num_deletions):
     """
-
+    Filter out alignments that have too many deletions
     """
     return pandas_df[pandas_df["num_deletions"] < num_deletions]
 
 
 def map_to_one_chrom(pandas_df):
     """
-
+    Filter out alignments that only map to one chromosome
     """
     mapper = pandas_df.groupby("read_name")["chrom"].nunique().to_dict()
     pandas_df["unique_chroms"] = pandas_df["read_name"].map(mapper)
@@ -534,7 +541,7 @@ def map_to_one_chrom(pandas_df):
 def filter_merged_sam(
         merged_sam,
         diff_from_max_percent=0.025,
-        min_match=74,
+        min_match=75,
         mismatch_ratio=0.025,
         num_deletions=3,
 ):
@@ -577,7 +584,8 @@ def filter_merged_sam(
 
 
 def read_rescue_unmerged(
-        unmerged_sam, diff_from_max_percent=0.025, min_match=100, num_deletions=3
+        unmerged_sam, diff_from_max_percent=0.025, min_match=100, num_deletions=3,
+        mismatch_ratio=0.025
 ):
     """"
     Preform 'read rescue' for unmerged (paired-end) sequences
@@ -588,6 +596,7 @@ def read_rescue_unmerged(
                                     a given read and the best alignment for that read
         min_match (int): Minimum number of bases matching between the query and reference
         num_deletions (float): Maximum number of deletions
+        mismatch_ratio (float): Ratio of mismatches to matches
 
     Returns:
         df_pair (pandas data frame): Data frame with data for reads that survived
@@ -643,32 +652,19 @@ def read_rescue_unmerged(
     df_pair = df_pair[df_pair["insert_size"] < 1000]
 
     # Filter out reads less than 2.5% max score.
-    df_pair["max_score_read_name"] = df_pair.groupby("read_name")[
-        "alignment_score"
-    ].transform(max)
-    df_pair["diff_percent_max_round"] = np.round(
-        df_pair["max_score_read_name"] * diff_from_max_percent
-    )
-    df_pair["score_max_diff"] = df_pair["max_score_read_name"] - df_pair["alignment_score"]
-    df_pair = df_pair[df_pair["score_max_diff"] <= df_pair["diff_percent_max_round"]]
+    df_pair = not_close_to_max(df_pair, diff_from_max_percent)
 
     # Filter out reads with less than 100 bp matching.
-    df_pair = df_pair[df_pair["num_matches"] >= min_match]
+    df_pair = min_num_of_matches(df_pair, min_match)
 
     # Filter out reads with too many mismatches (more than 1 mismatch every 40 bp).
-    df_pair["mismatch_ratio"] = df_pair["num_mismatches"].astype(float) / df_pair[
-        "num_matches"
-    ].astype(float)
-    df_pair = df_pair[df_pair["mismatch_ratio"] < 0.025]
+    df_pair = too_many_mismatch(df_pair, mismatch_ratio)
 
     # Filter out reads with too many deletions.
     df_pair = df_pair[df_pair["num_deletions"] <= num_deletions]
 
     # Finally keep reads that have only one annotated chromosome.
-    mapper = df_pair.groupby("read_name")["chrom"].nunique().to_dict()
-    df_pair["unique_chroms"] = df_pair["read_name"].map(mapper)
-    df_pair = df_pair[df_pair["unique_chroms"] == 1]
-    return df_pair
+    df_pair = map_to_one_chrom(df_pair)
 
 
 def combine_df(df1, df2):

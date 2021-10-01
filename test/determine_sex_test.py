@@ -1,11 +1,13 @@
+
 import unittest
 import sys
 import pandas as pd
-
+import os
 sys.path.append("../")
 
 
 from src.scims.determine_sex import *
+
 
 tempFilesList = []
 
@@ -41,7 +43,7 @@ class TestDetermineSex(unittest.TestCase):
 
     def test_check_bwa_index(self):
         with self.assertRaises(Exception):
-            check_bwa_index("trim")
+            check_bwa_index("trim1")
         self.assertEqual(check_bwa_index("/Users/kobiekirven/Desktop/scimsTest/trim"), True)
 
     def test_temp_files_list(self):
@@ -61,14 +63,17 @@ class TestDetermineSex(unittest.TestCase):
         self.assertEqual(calculate_stats(2313, 1219)[1], 0.016)
 
     def test_verify_sam_file(self):
-        self.assertEqual(verify_sam_file("test_sam.sam"), True)
-        self.assertEqual(verify_sam_file("test_sam_bad.sam"), False)
+        self.assertEqual(verify_sam_file(os.getcwd() + "/test_sam.sam"), True)
+        self.assertEqual(verify_sam_file( print(os.getcwd()) + "/test_sam_bad.sam"), False)
+
+    def test_decompose_sam_flag(self):
+        print(decompose_sam_flag(65))
 
 if __name__ == "__main__":
-    test = unittest.TestDetermineSex()
-    test.test_check_index_files
+    test = TestDetermineSex()
+    test.test_check_index_files()
     test.test_not_close_to_max()
-    test.test_tempFilesList()
-    test.test_check_bwa_inde()
-    test.test_verify_sam_file()
-
+    test.test_temp_files_list()
+    test.test_check_bwa_index()
+    # test.test_verify_sam_file()
+    test.test_decompose_sam_flag()
