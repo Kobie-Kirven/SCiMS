@@ -11,7 +11,9 @@ import time
 
 
 def scims():
-    """Main function for the scims program"""
+    """
+    Main function for the scims program
+    """
 
     parser = argparse.ArgumentParser(
         description="Sex Calling for Metagenomic Sequences"
@@ -100,6 +102,7 @@ def scims():
         buildBowtie2Index(args.reference, args.output)
 
     elif args.command == "determine-sex":
+        #Align reads with Bowtie2
         print("Now aligning reads with BWA..")
         timeStart = time.time()
         bwa = align_with_bwa(args.index, args.forward, args.reverse, args.threads)

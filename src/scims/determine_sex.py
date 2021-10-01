@@ -711,13 +711,12 @@ def get_start_and_stop(in_sam, min_mapq):
     """
     seen_starts, seen_ends = set(), set()
     for rec in ParseSam(in_sam):
-        if (rec.flag & 256 == 256) or (rec.flag & 2048 == 2048):
+        if "SECONDARY" in decompose_sam_flag(rec.flag) or "SUPPLEMENTARY" in decompose_sam_flag(rec.flag):
             continue
-        if rec.flag & 64 != 64 or rec.tlen < 0:
-            continue
-        if rec.mapq >= min_mapq:
-            seen_starts.add("{}:{}".format(rec.rnam, rec.pos))
-            seen_ends.add("{}:{}".format(rec.rnam, rec.pos + rec.tlen - 1))
+        if "READ1" in decompose_sam_flag(rec.flag) and rec.tlen >= 0:
+            if rec.mapq >= min_mapq:
+                seen_starts.add("{}:{}".format(rec.rnam, rec.pos))
+                seen_ends.add("{}:{}".format(rec.rnam, rec.pos + rec.tlen - 1))
     return seen_starts, seen_ends
 
 
