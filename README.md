@@ -20,10 +20,10 @@ to the heterogametic chromosome versus both sex chromosomes together.
 ## Installation
 
 ### Requirements
-- bwa 
-- bowtie2 
-- Flash 
-- Samtools
+- bwa==0.7.17-r1188 
+- bowtie2==2.4.4 
+- FLASH==v1.2.11 
+- Samtools==1.13
 
 All of the required tools can be installed with conda (see [Install Requirements](#Install-Requirements))
 
@@ -95,11 +95,31 @@ This tutorial is intended to ensure that SCiMS is working correctly.
    wget https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh38_latest/refseq_identifiers/GRCh38_latest_genomic.fna.gz
    ```
 3. Build reference indices for BWA and Bowite2:
-   ```bash
+   ```text
    scims build-index -r GRCh38_latest_genomic.fna.gz -o GRCh38_latest_genomic.fna.gz
    ```
 4. Determine the sex:
-   ```bash
+   ```text
    scims determine-sex -i GRCh38_latest_genomic.fna.gz -1 male_1.fastq.gz \
    -2 male_2.fastq.gz -t 2 -hom "NC_000023.11" -het "NC_000024.10"
+   ```
+5. You should see output similar to the following:
+   ```text
+    Now aligning reads with BWA..
+    BWA finished in 16.33 seconds
+    
+    Now merging files with Flash...
+    Flash finished in 0.03 seconds
+    
+    Now aligning merged reads with Bowtie2...
+    Bowtie2 finished in 20.56 seconds
+    
+    Now aligning unmerged reads with Bowtie2...
+    Bowtie2 finished in 24.54 seconds
+    
+    Preforming read rescue...
+    The proportion of NC_000024.10 reads to NC_000023.11 reads is:
+    0.219 ± 0.004 (95% CI)
+    
+    Thank you for using SCiMS!
    ```
