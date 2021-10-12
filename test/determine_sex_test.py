@@ -69,11 +69,16 @@ class TestDetermineSex(unittest.TestCase):
     def test_decompose_sam_flag(self):
         print(decompose_sam_flag(65))
 
+    def test_filter_unmerged_sam(self):
+        data = filter_unmerged_sam("/Users/kobiekirven/Desktop/scimsTest/test_pair.sam")
+        # print(data)
+
 if __name__ == "__main__":
     test = TestDetermineSex()
-    test.test_check_index_files()
-    test.test_not_close_to_max()
-    test.test_temp_files_list()
-    test.test_check_bwa_index()
-    # test.test_verify_sam_file()
-    test.test_decompose_sam_flag()
+    test.test_filter_unmerged_sam()
+    # test.test_check_index_files()
+    # test.test_not_close_to_max()
+    # test.test_temp_files_list()
+    # test.test_check_bwa_index()
+    # # test.test_verify_sam_file()
+    # test.test_decompose_sam_flag()
