@@ -266,12 +266,16 @@ def compare_to_homogametic(counts_dict_normal, homogametic_element):
     return counts_dict
 
 def generate_plot(counts_dict_plot, output, homogametic_element, heterogametic_element):
-    ids, counts = [], []
+    ids = []
     for ele in counts_dict_plot:
         if ele != heterogametic_element:
             ids.append(ele)
+    ids.sort()
+    counts = []
+    for ele in ids:
+        if ele != heterogametic_element:
             counts.append(counts_dict_plot[ele])
-    plt.scatter(ids, counts)
+    plt.scatter(ids, counts, color="black")
     plt.ylim([0, 2])
     plt.title(homogametic_element + ":Autosomal Coverage Ratio")
     plt.ylabel('Normalized Coverage')

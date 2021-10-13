@@ -20,9 +20,7 @@ to the heterogametic chromosome versus both sex chromosomes together.
 ## Installation
 
 ### Requirements
-- bwa==0.7.17-r1188 
-- bowtie2==2.4.4 
-- FLASH==v1.2.11 
+- bowtie2==2.4.4
 - Samtools==1.13
 
 All of the required tools can be installed with conda (see [Install Requirements](#Install-Requirements))
@@ -73,8 +71,6 @@ pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 ## Install Requirements
 To install the required tools with conda, run the following code. 
 ```bash
-conda install -c bioconda bwa
-conda install -c bioconda flash
 conda install -c bioconda bowtie2
 conda install -c bioconda samtools
 ```
@@ -85,6 +81,9 @@ conda install tbb=2020.2
 ```
 ## Quick Tutorial
 This tutorial is intended to ensure that SCiMS is working correctly. 
+
+<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/female.png" width="300">
+<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/male.png" width="300">
 1. Download test FASTQ files:
    ```bash
    wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/male_1.fastq.gz
