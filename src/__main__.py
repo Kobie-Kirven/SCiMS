@@ -78,6 +78,7 @@ def scims():
     alignment = paired_reads_with_bowtie2(args.index, reads[0], reads[1], "local", args.threads)
     lengths = determine_chrom_lengths(args.ref)
     counts = count_chrom_alignments(alignment)
+    print(count_seqs(counts))
     normalized_length_counts = normalize_by_chrom_lengths(counts, lengths)
     compare = compare_to_homogametic(normalized_length_counts, args.homogametic)
     generate_plot(compare, args.output, args.homogametic, args.heterogametic)

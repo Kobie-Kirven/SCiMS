@@ -212,7 +212,7 @@ def paired_reads_with_bowtie2(
         subprocess.run(
             [
                 "bowtie2",
-                "-p",
+                "-p" +
                 str(threads),
                 "--" + method,
                 "-x",
@@ -237,9 +237,15 @@ def not_in_list(not_list, input_list):
 
 def determine_chrom_lengths(reference_genome):
     chrom_lengths = {}
-    for record in SeqIO.parse(reference_genome, "fasta"):
-        if "NW" not in record.id and "NT" not in record.id:
-            chrom_lengths[record.id] = len(str(record.seq))
+    if reference_genome[:-2]==".gz":
+        with gzip.open(reference_genome, "rt") as handle:
+            for record in SeqIO.parse(handle, "fasta"):
+                if "NW" not in record.id and "NT" not in record.id:
+                    chrom_lengths[record.id] = len(str(record.seq))
+    else:
+        for record in SeqIO.parse(reference_genome, "fasta"):
+            if "NW" not in record.id and "NT" not in record.id:
+                chrom_lengths[record.id] = len(str(record.seq))
     return chrom_lengths
 
 
@@ -264,6 +270,13 @@ def compare_to_homogametic(counts_dict_normal, homogametic_element):
     for ele in counts_dict_normal:
         counts_dict[ele] =  counts_dict_normal[homogametic_element] / counts_dict_normal[ele]
     return counts_dict
+
+def count_seqs(count_dict):
+    sum = 0
+    for id in count_dict:
+        sum += int(count_dict[id])
+    return sum
+
 
 def generate_plot(counts_dict_plot, output, homogametic_element, heterogametic_element):
     ids = []
