@@ -103,12 +103,12 @@ def get_human_sequences(input_sam):
         input_sam (str): Path to input SAM file
 
     Returns:
-        f.name (str): Path to output BAM file
+        f.name (str): Path to output SAM file
     """
     with tempfile.NamedTemporaryFile(delete=False) as f:
         if verify_sam_file(input_sam):
             subprocess.run(
-                ["samtools", "view", "-F", "4", "-F", "8", "-b", input_sam],
+                ["samtools", "view", "-F", "4", "-F", "8", input_sam],
                 stdout=f,
                 stderr=subprocess.DEVNULL,
             )

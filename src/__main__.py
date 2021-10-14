@@ -71,7 +71,11 @@ def scims():
 
     args = parser.parse_args()
 
-    alignment = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "local", threads=1)
+    fast_align = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "very-fast-local", args.threads)
+    human_reads = get_human_sequences(fast_align)
+    ids = get_unique_ids_in_sam(human_reads)
+    reads = get_fastq_reads_in_sam(ids, args.forward, args.reverse)
+    alignment = paired_reads_with_bowtie2(args.index, reads[0], reads[1], "local", args.threads)
     lengths = determine_chrom_lengths(args.ref)
     counts = count_chrom_alignments(alignment)
     normalized_length_counts = normalize_by_chrom_lengths(counts, lengths)
