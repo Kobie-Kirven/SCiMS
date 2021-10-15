@@ -237,7 +237,7 @@ def not_in_list(not_list, input_list):
 
 def determine_chrom_lengths(reference_genome):
     chrom_lengths = {}
-    if reference_genome[:-2]==".gz":
+    if reference_genome[-3:]==".gz":
         with gzip.open(reference_genome, "rt") as handle:
             for record in SeqIO.parse(handle, "fasta"):
                 if "NW" not in record.id and "NT" not in record.id:
