@@ -177,14 +177,12 @@ def not_in_list(not_list, input_list):
             return False
     return True
 
-def determine_chrom_lengths(reference_genome, scaffold_names=[]):
+def determine_chrom_lengths(reference_genome):
     """
     Compute the lengths of the chromosome scaffolds
 
     Parameters:
         reference_genome (str): path to the reference genome
-        scaffold_names (list): List of scaffold names to be
-                                included in the output (default=all scaffolds in reference genome)
 
     Returns:
         chrom_lengths(dict): Scaffold names are keys and values are scaffold lenghts
@@ -201,13 +199,21 @@ def determine_chrom_lengths(reference_genome, scaffold_names=[]):
                 chrom_lengths[record.id] = len(str(record.seq))
     return chrom_lengths
 
+def read_scaffold_names(scaffolds_file):
+    scaffold_list = []
+    with open(scaffolds_file) as fn:
+        lines = fn.readlines()
+        for line in lines:
+            scaffold_list.append(line[1:].strip("\n"))
+    return scaffold_list
 
-def count_chrom_alignments(sam_file):
+def count_chrom_alignments(sam_file, scaffold_list=[]):
     """
     Count all alignments that match mapping criteria
 
     Parameters:
         sam_file (str): path to SAM file to be used for analysis
+        scaffold_list(list): List of scaffold names to be used
 
     Returns:
         hit_counts (dict): Keys are scaffold names and number of counts are values
@@ -215,7 +221,13 @@ def count_chrom_alignments(sam_file):
     hit_counts = {}
     for rec in ParseSam(sam_file):
         if not_in_list(["SECONDARY", "UNMAP", "MUNMAP", "SUPPLEMENTARY"], decompose_sam_flag(rec.flag)) == True:
-            if "NW" not in rec.rnam and "NT" not in rec.rnam:
+            if scaffold_list:
+                if rec.rnam in scaffold_list:
+                    if rec.rnam not in hit_counts:
+                        hit_counts[rec.rnam] = 1
+                    else:
+                        hit_counts[rec.rnam] += 1
+            else:
                 if rec.rnam not in hit_counts:
                     hit_counts[rec.rnam] = 1
                 else:

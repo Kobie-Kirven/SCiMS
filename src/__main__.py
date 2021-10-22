@@ -36,6 +36,11 @@ def scims():
     )
 
     parser.add_argument(
+        "-sca", dest="scaffold", help="Scaffolds to be used",
+        required=True
+    )
+
+    parser.add_argument(
         "-1",
         dest="forward",
         help="Forward reads in fasta or fastq format")
@@ -85,10 +90,16 @@ def scims():
     print("Getting scaffold lengths for {}".format(args.ref))
     lengths = determine_chrom_lengths(args.ref)
 
-    print("Extracting propper alignments:")
-    counts = count_chrom_alignments(alignment)
-    print("\tA total of {} alignments met the criteria")
-    print(count_seqs(counts))
+    if args.scaffold:
+        scaffolds = read_scaffold_names(args.scaffold)
+        print("Extracting propper alignments:")
+        counts = count_chrom_alignments(alignment, scaffolds)
+
+    else:
+        print("Extracting propper alignments:")
+        counts = count_chrom_alignments(alignment)
+
+    print("\tA total of {} alignments met the criteria".format(str(count_seqs(counts))))
     normalized_length_counts = normalize_by_chrom_lengths(counts, lengths)
     compare = compare_to_homogametic(normalized_length_counts, args.homogametic)
     generate_plot(compare, args.output, args.homogametic, args.heterogametic)
