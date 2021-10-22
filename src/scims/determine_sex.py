@@ -94,103 +94,6 @@ def verify_sam_file(sam_file):
                     return False
         return flag
 
-def get_human_sequences(input_sam):
-    """
-    Get the sequences from BWA alignment output
-    that map to the human genome
-
-    Parameters:
-        input_sam (str): Path to input SAM file
-
-    Returns:
-        f.name (str): Path to output SAM file
-    """
-    with tempfile.NamedTemporaryFile(delete=False) as f:
-        if verify_sam_file(input_sam):
-            subprocess.run(
-                ["samtools", "view", "-F", "4", "-F", "8", input_sam],
-                stdout=f,
-                stderr=subprocess.DEVNULL,
-            )
-            temp_files_list(f.name)
-            return f.name
-        else:
-            raise Exception("Not a valid SAM file")
-
-
-def get_unique_ids_in_sam(input_sam):
-    """
-    Get the unique query names from the SAM file
-
-    Parameters:
-        input_sam (str): Path to input SAM file
-
-    returns:
-        (list): Set of unique FASTA IDs
-    """
-    read_ids = []
-    with open(input_sam) as fn:
-        for rec in fn:
-            line = ReadSamLine(rec)
-            line.getFeatures()
-            read_ids.append(line.query)
-    return set(read_ids)
-
-
-def get_fastq_reads_in_sam(read_ids, forward_reads, reverse_reads):
-    """
-    Get FASTQ reads for sequences in SAM file
-
-    Parameters:
-        read_ids (list): List of FASTA IDs
-        forward_reads (str): Path to forward FASTQ reads
-        reverse_reads (str): Path to reverse FASTQ reads
-
-    Returns:
-        out_fastq1.name (str): Path to output forward FASTQ file
-        out_fastq2.name (str): Path to output reverse FASTQ file
-    """
-
-    # Open output files
-    out_fastq1, out_fastq2 = (
-        tempfile.NamedTemporaryFile(delete=False),
-        tempfile.NamedTemporaryFile(delete=False),
-    )
-
-    # Get whether the file is FASTA or FASTQ
-    file_type = fastaOrFastq(forward_reads)
-
-    # Open the input read files and get those FASTQ sequences from the SAM file
-    if isFileGzip(forward_reads):
-        forward_reads = gzip.open(forward_reads, "rt")
-        reverse_reads = gzip.open(reverse_reads, "rt")
-
-    for rec1 in SeqIO.parse(forward_reads, file_type):
-        if str(rec1.id)[:-2] in read_ids:
-            out_fastq1.write(("@" + str(rec1.description)[:-2] + "\n").encode())
-            out_fastq1.write((str(rec1.seq) + "\n").encode())
-            out_fastq1.write("+\n".encode())
-            quality = ""
-            for qual in rec1.letter_annotations["phred_quality"]:
-                quality = quality + str(chr(qual + 33))
-            out_fastq1.write((str(quality) + "\n").encode())
-
-    for rec2 in SeqIO.parse(reverse_reads, file_type):
-        if str(rec2.id)[:-2] in read_ids:
-            out_fastq2.write(("@" + str(rec2.description)[:-2] + "\n").encode())
-            out_fastq2.write((str(rec2.seq) + "\n").encode())
-            out_fastq2.write("+\n".encode())
-            quality = ""
-            for qual in rec2.letter_annotations["phred_quality"]:
-                quality = quality + str(chr(qual + 33))
-            out_fastq2.write((str(quality) + "\n").encode())
-
-    out_fastq1.close()
-    out_fastq2.close()
-    temp_files_list(out_fastq1.name)
-    temp_files_list(out_fastq2.name)
-    return out_fastq1.name, out_fastq2.name
-
 
 def paired_reads_with_bowtie2(
         index, forward_reads, reverse_reads, method, threads=1
@@ -203,7 +106,6 @@ def paired_reads_with_bowtie2(
         forward_reads (str): Path to forward FASTQ reads
         reverse_reads (str): Path to reverse FASTq reads
         threads (int): Number of threads to use
-        no_of_align_per_read (int): Maximum number of alignments per-read
 
     Returns:
         f.name (str): Path to output SAM file
@@ -228,14 +130,66 @@ def paired_reads_with_bowtie2(
         temp_files_list(f.name)
         return f.name
 
+def single_reads_with_bowtie2(
+        reads, index, method, threads=1
+):
+    """
+    Align paired reads with bowtie2
+
+    Parameters:
+        reads (str): Path to read file for alignment
+        index (str): Prefix for Bowite2 index
+        threads (int): Number of threads to use
+    Returns:
+        f.name (str): Path to output SAM file
+    """
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        subprocess.run(
+            [
+                "bowtie2",
+                "-p" +
+                str(threads),
+                "--" + method,
+                "-x",
+                index,
+                "-U",
+                reads
+            ],
+            stdout=f,
+            stderr=subprocess.DEVNULL,
+        )
+        temp_files_list(f.name)
+        return f.name
+
 def not_in_list(not_list, input_list):
+    """
+    Check to make sure that no elements in one list are in another list
+
+    Parameters:
+        not_list (list): List of elements that should not be in input_list
+        input_list (list): List of elements that are not wanted
+
+    Returns:
+        (bool): Returns True if no elements in not_list are in input_list
+    """
     flag = True
     for ele in not_list:
         if ele in input_list:
             return False
     return True
 
-def determine_chrom_lengths(reference_genome):
+def determine_chrom_lengths(reference_genome, scaffold_names=[]):
+    """
+    Compute the lengths of the chromosome scaffolds
+
+    Parameters:
+        reference_genome (str): path to the reference genome
+        scaffold_names (list): List of scaffold names to be
+                                included in the output (default=all scaffolds in reference genome)
+
+    Returns:
+        chrom_lengths(dict): Scaffold names are keys and values are scaffold lenghts
+    """
     chrom_lengths = {}
     if reference_genome[-3:]==".gz":
         with gzip.open(reference_genome, "rt") as handle:
@@ -250,6 +204,15 @@ def determine_chrom_lengths(reference_genome):
 
 
 def count_chrom_alignments(sam_file):
+    """
+    Count all alignments that match mapping criteria
+
+    Parameters:
+        sam_file (str): path to SAM file to be used for analysis
+
+    Returns:
+        hit_counts (dict): Keys are scaffold names and number of counts are values
+    """
     hit_counts = {}
     for rec in ParseSam(sam_file):
         if not_in_list(["SECONDARY", "UNMAP", "MUNMAP", "SUPPLEMENTARY"], decompose_sam_flag(rec.flag)) == True:
@@ -261,17 +224,46 @@ def count_chrom_alignments(sam_file):
     return hit_counts
 
 def normalize_by_chrom_lengths(counts_dict, chrom_lengths_dict):
+    """
+    Normalize the number of counts by the length of the chromosome
+
+    Parameters:
+        counts_dict(dict): count_chrom_alignments
+        chrom_lengths_dict(dict): output from determine_chrom_lengths()
+
+    Returns:
+        counts_dict (dict):
+    """
     for ele in counts_dict:
         counts_dict[ele] = counts_dict[ele] / float(chrom_lengths_dict[ele])
     return counts_dict
 
 def compare_to_homogametic(counts_dict_normal, homogametic_element):
+    """
+    Compare the coverages to the coverage of the homogametic element
+
+    Parameters:
+        counts_dict_normal(dict): output from normalize_by_chrom_lengths()
+        chrom_lengths_dict(dict): output from determine_chrom_lengths()
+
+    Returns:
+        counts_dict(dict): keys are chromosome names and values are normalized coverages
+    """
     counts_dict = {}
     for ele in counts_dict_normal:
         counts_dict[ele] =  counts_dict_normal[homogametic_element] / counts_dict_normal[ele]
     return counts_dict
 
 def count_seqs(count_dict):
+    """
+    Counts the total number of valid alignments
+
+    Parameters:
+        count_dict(dict): output from count_chrom_alignments()
+
+    Returns:
+        sum (int): Total number of valid alignments
+    """
     sum = 0
     for id in count_dict:
         sum += int(count_dict[id])
@@ -279,6 +271,9 @@ def count_seqs(count_dict):
 
 
 def generate_plot(counts_dict_plot, output, homogametic_element, heterogametic_element):
+    """
+    Create a plot from chromosomal coverage data
+    """
     ids = []
     for ele in counts_dict_plot:
         if ele != heterogametic_element:
@@ -301,6 +296,4 @@ def stats_test(counts_dict, homogametic_element, heterogametic_element):
     for ele in counts_dict:
         if ele != homogametic_element and ele != heterogametic_element:
             counts_list.append(counts_dict[ele])
-    male = stats.ttest_1samp(counts_list, 0.5, alternative='two-sided')
-    female = stats.ttest_1samp(counts_list, 1, alternative='two-sided')
-    return male, female
+    return sum(counts_list) / len(counts_list)

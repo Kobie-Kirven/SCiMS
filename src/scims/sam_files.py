@@ -73,33 +73,6 @@ class ReadSamLine:
             self.yt = None
             self.mismatch_ref_bases = None
 
-            if len(samFields) >= 10:
-                # If the file is a bowtie file, get the bowtie-specific
-                # fields in the SAM file
-                for field in samFields[10:]:
-                    if "AS:i" in field:
-                        self.align_score = int(field.strip("AS:i"))
-                    elif "XS:i" in field:
-                        self.align_score_best = int(field.strip("XS:i"))
-                    elif "YS:i" in field:
-                        self.align_score_mate = int(field.strip("YS:i"))
-                    elif "XN:i" in field:
-                        self.num_ambig = int(field.strip("XN:i"))
-                    elif "XM:i" in field:
-                        self.mismatches = int(field.strip("XM:i"))
-                    elif "XO:i" in field:
-                        self.gap_opens = int(field.strip("XO:i"))
-                    elif "XG:i" in field:
-                        self.gap_ext = int(field.strip("XG:i"))
-                    elif "NM:i" in field:
-                        self.edit_distance = int(field.strip("NM:i"))
-                    elif "YF:Z" in field:
-                        self.why_filtered = int(field.strip("YF:Z"))
-                    elif "YT:Z" in field:
-                        self.yt = field.strip("YT:Z")
-                    elif "MD:Z" in field:
-                        self.mismatch_ref_bases = field.strip("MD:Z")
-
 
 def parseCigarStr(cigarStr):
     """Parse thought a cigar string from the SAM file

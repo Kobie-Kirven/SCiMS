@@ -2,7 +2,6 @@
 # Davenport Lab - Penn State University
 # Date: 9-2-2021
 
-
 # imports
 import argparse
 from .scims import *
@@ -39,15 +38,15 @@ def scims():
     parser.add_argument(
         "-1",
         dest="forward",
-        help="Forward reads in fasta or fastq format",
-        required=True)
-    parser.add_argument("-2", dest="reverse", help="Reverse reads in fasta or fastq format", required=True)
+        help="Forward reads in fasta or fastq format")
 
+    parser.add_argument("-2", dest="reverse", help="Reverse reads in fasta or fastq format")
+
+    parser.add_argument("-s", dest="single", help="Single-end reads in fasta or fastq format" )
 
     parser.add_argument(
         "-t",
-       dest="threads", help="Number of threads to use",
-        required=True
+       dest="threads", help="Number of threads to use"
     )
 
     parser.add_argument(
@@ -71,22 +70,29 @@ def scims():
 
     args = parser.parse_args()
 
-    fast_align = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "very-fast-local", args.threads)
-    human_reads = get_human_sequences(fast_align)
-    ids = get_unique_ids_in_sam(human_reads)
-    reads = get_fastq_reads_in_sam(ids, args.forward, args.reverse)
-    alignment = paired_reads_with_bowtie2(args.index, reads[0], reads[1], "local", args.threads)
-    lengths = determine_chrom_lengths(args.ref)
+    if args.forward and args.reverse:
+        #Paired-end mode
+        print("Aligning sequences to {}:".format(args.index))
+        alignment = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "local", args.threads)
+
+        print("Getting scaffold lengths for {}".format(args.reference))
+        lengths = determine_chrom_lengths(args.ref)
+
+    elif args.single:
+        #Single-end mode
+        print("Aligning {} to {}:".format(args.single, args.index))
+        alignment = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "local", args.threads)
+
+
+    print("Extracting propper alignments:")
     counts = count_chrom_alignments(alignment)
+    print("\tA total of {} alignments met the criteria")
     print(count_seqs(counts))
     normalized_length_counts = normalize_by_chrom_lengths(counts, lengths)
     compare = compare_to_homogametic(normalized_length_counts, args.homogametic)
     generate_plot(compare, args.output, args.homogametic, args.heterogametic)
-    stats = stats_test(compare, args.homogametic,args.heterogametic)
-    if stats[0].pvalue > stats[1].pvalue:
-        print("Male")
-    elif stats[1].pvalue > stats[0].pvalue:
-        print("Female")
+    stats = stats_test(compare, args.homogametic, args.heterogametic)
+    print("The average {}:{} ratio for the file was {}".format(args.heterogametic, args.homogametic, stats))
     delete_temp_file_list()
 
 
