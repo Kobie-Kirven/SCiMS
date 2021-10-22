@@ -70,7 +70,7 @@ def scims():
 
     args = parser.parse_args()
 
-    if len(args.forward) > 1:
+    if type(args.forward) == str:
         #Paired-end mode
         print("Aligning sequences to {}:".format(args.index))
         alignment = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "local", args.threads)
