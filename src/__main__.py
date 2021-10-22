@@ -81,7 +81,7 @@ def scims():
     elif args.single:
         #Single-end mode
         print("Aligning {} to {}:".format(args.single, args.index))
-        alignment = single_reads_with_bowtie2(args.index, args.forward, args.reverse, "local", args.threads)
+        alignment = single_reads_with_bowtie2(args.single, args.index, "local", args.threads)
 
 
     print("Extracting propper alignments:")
