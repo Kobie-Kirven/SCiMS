@@ -82,7 +82,7 @@ def scims():
         alignment = single_reads_with_bowtie2(args.single, args.index, "local", args.threads)
         print(alignment)
 
-    print("Getting scaffold lengths for {}".format(args.reference))
+    print("Getting scaffold lengths for {}".format(args.ref))
     lengths = determine_chrom_lengths(args.ref)
 
     print("Extracting propper alignments:")
