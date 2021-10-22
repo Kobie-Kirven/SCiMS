@@ -13,7 +13,6 @@ import tempfile
 import math
 import gzip
 import matplotlib.pyplot as plt
-import scipy.stats as stats
 
 files_list = []
 
