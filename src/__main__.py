@@ -75,14 +75,15 @@ def scims():
         print("Aligning sequences to {}:".format(args.index))
         alignment = paired_reads_with_bowtie2(args.index, args.forward, args.reverse, "local", args.threads)
 
-        print("Getting scaffold lengths for {}".format(args.reference))
-        lengths = determine_chrom_lengths(args.ref)
 
     elif args.single:
         #Single-end mode
         print("Aligning {} to {}:".format(args.single, args.index))
         alignment = single_reads_with_bowtie2(args.single, args.index, "local", args.threads)
+        print(alignment)
 
+    print("Getting scaffold lengths for {}".format(args.reference))
+    lengths = determine_chrom_lengths(args.ref)
 
     print("Extracting propper alignments:")
     counts = count_chrom_alignments(alignment)
