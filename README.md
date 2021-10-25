@@ -5,8 +5,6 @@
 - [What is SCiMS?](#What-is-SCiMS?)
 - [Installation](#Installation)
 - [Usage](#Usage)
-  - [Building Indicies](#Building-Indices)
-  - [Determine Sex](#Determine-Sex)
 - [Install Requirements](#Install-Requirements)
 - [Quick Tutorial](#Quick-Tutorial)
 ---
@@ -30,44 +28,39 @@ SCiMS can be easily installed with:
 pip3 install git+https://github.com/Kobie-Kirven/SCiMS
 ```
 ## Usage
-- ### Building Indices
-  The first step in using SCiMS is to build indices of the reference genome for
-  BWA and Bowtie2. The ```build-index``` module makes it easy to build the indices
-  for both tools with one command.
-    ```
-    usage: scims build-index [-h] [-r REFERENCE] [-o OUTPUT]
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -r REFERENCE, --reference REFERENCE
-                            Host reference genome in FASTA or FASTQ format
-                            (default: None)
-      -o OUTPUT, --output OUTPUT
+- SCiMS is designed to work with both single and paired-end metagenomic data. The command-line usage is:
+    ```
+    usage: scims [-h] [-v] -i INDEX -r REF -sca SCAFFOLD [-1 FORWARD] [-2 REVERSE] [-s SINGLE] [-t THREADS] -hom HOMOGAMETIC
+             [-het HETEROGAMETIC] -o OUTPUT
 
+  Sex Calling for Metagenomic Sequences
+  
+  optional arguments:
+    -h, --help          show this help message and exit
+    -v, --version       show program's version number and exit
+    -i INDEX            Path to Bowtie2 index
+    -r REF              Reference genome in FASTA or FASTA.gz format
+    -sca SCAFFOLD       Path to file with scaffold names
+    -1 FORWARD          Forward reads in FASTA or FASTQ format (PE mode only)
+    -2 REVERSE          Reverse reads in FASTA or FASTQ format (PE mode only)
+    -s SINGLE           Single-end reads in FASTA or FASTQ format (SE mode only)
+    -t THREADS          Number of threads to use
+    -hom HOMOGAMETIC    ID of homogametic sex chromosome (ex. X)
+    -het HETEROGAMETIC  ID of heterogametic sex chromesome (ex. Y)
+    -o OUTPUT           Output plot prefix
     ```
-- ### Determine Sex
-  The ```determine-sex``` module will give an output of the proportion
-  of reads that map to the homogametic chromosome versus both sex chromosomes. 
-  This module requires that you already have the BWA/Bowtie2 indices built. 
-    ```
-    usage: scims determine-sex [-h] [-i INDEX] [-1 FORWARD] [-2 REVERSE] [-t THREADS] [-hom HOMOGAMETIC]
-                               [-het HETEROGAMETIC]
-    
-    optional arguments:
-      -h, --help            show this help message and exit
-      -i INDEX, --index-name INDEX
-                            Name of bowtie2 and bwa index (default: None)
-      -1 FORWARD, --forward-reads FORWARD
-                            Forward reads in fasta or fastq format (default: None)
-      -2 REVERSE, --reverse-reads REVERSE
-                            Reverse reads in fasta or fastq format (default: None)
-      -t THREADS, --number-of-threads THREADS
-                            Number of threads to use (default: None)
-      -hom HOMOGAMETIC, --homogametic HOMOGAMETIC
-                            ID of homogametic sex chromesome (ex. X) (default: None)
-      -het HETEROGAMETIC, --heterogametic HETEROGAMETIC
-                            ID of heterogametic sex chromesome (ex. Y) (default: None)
-    ```
+
+- What do you need to run SCiMS?
+  - INDEX: Database created from ```bowtie2-build``` using the appropriate reference genome
+  - REF: Reference genome that was used to generate bowtie2 database
+  - SCA: Text file containing the FASTA IDs for the scaffolds to be included in the analysis (see example data)
+  - FORWARD: For paired-end mode, the file containing the forward shotgun metagenomic sequences
+  - REVERSE: For paired-end mode, the file containing the reverse shotgun metagenomic sequences
+  - SINGLE: For single-end mode, the file containing the shotgun metagenomic sequences
+  - THREADS: The number of threads to use
+  - HOMOGAMETIC: The FASTA ID of the sex chromosome in which two coppies denotes a particular genetic sex
+  - HETEROGAMETIC: The FASTA ID of the sex chromosome in which one copy denotes a particular genetic sex
 ## Install Requirements
 To install the required tools with conda, run the following code. 
 ```bash
@@ -80,45 +73,33 @@ run
 conda install tbb=2020.2
 ```
 ## Quick Tutorial
-This tutorial is intended to ensure that SCiMS is working correctly. 
+This tutorial is intended to ensure that your SCiMS installation is working correctly:
 
-<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/female.png" width="300">
-<img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/male.png" width="300">
 1. Download test FASTQ files:
    ```bash
-   wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/male_1.fastq.gz
-   wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/male_2.fastq.gz
+   wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/female_10000_1.fa
+   wget https://github.com/Kobie-Kirven/SCiMS/blob/main/test_data/female_10000_2.fa
    ```
 2. Download human reference genome from NCBI:
    ```bash
    wget https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh38_latest/refseq_identifiers/GRCh38_latest_genomic.fna.gz
    ```
-3. Build reference indices for BWA and Bowite2:
+3. Build reference indices for Bowite2:
    ```text
-   scims build-index -r GRCh38_latest_genomic.fna.gz -o GRCh38_latest_genomic.fna.gz
+   bowtie2-build GRCh38_latest_genomic.fna.gz GRCh38_latest_genomic.fna.gz
    ```
-4. Determine the sex:
+4. Get the scaffold names that we want to include in our analysis:
+    ```
+   zcat GRCh38_latest_genomic.fna.gz | grep NC | cut -d " " -f 1 > chroms.txt
+   ```
+5. Run SCiMS:
    ```text
-   scims determine-sex -i GRCh38_latest_genomic.fna.gz -1 male_1.fastq.gz \
-   -2 male_2.fastq.gz -t 2 -hom "NC_000023.11" -het "NC_000024.10"
+   scims -i GRCh38_latest_genomic.fna.gz -r GRCh38_latest_genomic.fna.gz \
+   -1 female_10000_1.fa -2 female_10000_2.fa -t 2 -sca chroms.txt \
+   -hom "NC_000023.11" -het "NC_000024.10"
    ```
-5. You should see output similar to the following:
+6. You should see output similar to the following:
    ```text
-    Now aligning reads with BWA..
-    BWA finished in 16.33 seconds
-    
-    Now merging files with Flash...
-    Flash finished in 0.03 seconds
-    
-    Now aligning merged reads with Bowtie2...
-    Bowtie2 finished in 20.56 seconds
-    
-    Now aligning unmerged reads with Bowtie2...
-    Bowtie2 finished in 24.54 seconds
-    
-    Preforming read rescue...
-    The proportion of NC_000024.10 reads to NC_000023.11 reads is:
-    0.219 ± 0.004 (95% CI)
-    
-    Thank you for using SCiMS!
+    ***COMING SOON***
    ```
+   <img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/female.png" width="300">
