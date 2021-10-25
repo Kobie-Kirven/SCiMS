@@ -13,8 +13,8 @@ SCiMS (Sex Calling for Metagenomic Sequences) is a tool for determining
 host sex using shotgun metagenomic data. Currently, this tool supports sex
 determination for host organisms that contain two sex chromosomes.
 (Ex. X and Y in humans). Briefly, SCiMS works by aligning shotgun metagenomic
-data to a reference genome and calculating the proportion of reads that map 
-to the heterogametic chromosome versus both sex chromosomes together. 
+data to a reference genome and comparing the coverage of the homogametic chromosome
+to the coverage of the autosomes. 
 ## Installation
 
 ### Requirements
