@@ -26,7 +26,7 @@ def scims():
     ######################################
 
     parser.add_argument(
-        "-i", dest="index", help="Name of bowtie2 and bwa index",
+        "-i", dest="index", help="Path to Bowtie2 index",
         required=True
     )
 
@@ -36,18 +36,18 @@ def scims():
     )
 
     parser.add_argument(
-        "-sca", dest="scaffold", help="Scaffolds to be used",
+        "-sca", dest="scaffold", help="Path to file with scaffold names",
         required=True
     )
 
     parser.add_argument(
         "-1",
         dest="forward",
-        help="Forward reads in fasta or fastq format")
+        help="Forward reads in FASTA or FASTQ format (PE mode only)")
 
-    parser.add_argument("-2", dest="reverse", help="Reverse reads in fasta or fastq format")
+    parser.add_argument("-2", dest="reverse", help="Reverse reads in FASTA or FASTQ format (PE mode only)")
 
-    parser.add_argument("-s", dest="single", help="Single-end reads in fasta or fastq format" )
+    parser.add_argument("-s", dest="single", help="Single-end reads in FASTA or FASTQ format (SE mode only)" )
 
     parser.add_argument(
         "-t",
@@ -69,7 +69,7 @@ def scims():
     parser.add_argument(
         "-o",
         dest="output",
-        help="Output plot name",
+        help="Output plot prefix",
         required="True"
     )
 
