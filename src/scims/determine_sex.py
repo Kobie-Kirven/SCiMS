@@ -177,7 +177,15 @@ def not_in_list(not_list, input_list):
             return False
     return True
 
-def determine_chrom_lengths(reference_genome):
+def read_scaffold_names(scaffolds_file):
+    scaffold_list = []
+    with open(scaffolds_file) as fn:
+        lines = fn.readlines()
+        for line in lines:
+            scaffold_list.append(line[1:].strip("\n"))
+    return scaffold_list
+
+def determine_chrom_lengths(reference_genome, scaffold_list):
     """
     Compute the lengths of the chromosome scaffolds
 
@@ -191,21 +199,21 @@ def determine_chrom_lengths(reference_genome):
     if reference_genome[-3:]==".gz":
         with gzip.open(reference_genome, "rt") as handle:
             for record in SeqIO.parse(handle, "fasta"):
-                if "NW" not in record.id and "NT" not in record.id:
-                    chrom_lengths[record.id] = len(str(record.seq))
+                if record.id in scaffold_list:
+                    count = 0
+                    for let in str(record.seq):
+                        if let != "N":
+                            count += 1
+                    chrom_lengths[record.id] = count
     else:
         for record in SeqIO.parse(reference_genome, "fasta"):
-            if "NW" not in record.id and "NT" not in record.id:
-                chrom_lengths[record.id] = len(str(record.seq))
+            if record.id in scaffold_list:
+                count = 0
+                for let in str(record.seq):
+                    if let != "N":
+                        count += 1
+                chrom_lengths[record.id] = count
     return chrom_lengths
-
-def read_scaffold_names(scaffolds_file):
-    scaffold_list = []
-    with open(scaffolds_file) as fn:
-        lines = fn.readlines()
-        for line in lines:
-            scaffold_list.append(line[1:].strip("\n"))
-    return scaffold_list
 
 def count_chrom_alignments(sam_file, scaffold_list=[]):
     """

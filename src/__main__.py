@@ -101,6 +101,9 @@ def scims():
 
     print("\tA total of {} alignments met the criteria".format(str(count_seqs(counts))))
     normalized_length_counts = normalize_by_chrom_lengths(counts, lengths)
+    with open(args.output + ".txt", "w") as fn:
+        for count in  normalized_length_counts:
+            fn.write("{}\t{}\n".format(count, normalized_length_counts[count]))
     compare = compare_to_homogametic(normalized_length_counts, args.homogametic)
     generate_plot(compare, args.output, args.homogametic, args.heterogametic)
     stats = stats_test(compare, args.homogametic, args.heterogametic)
