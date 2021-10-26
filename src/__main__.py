@@ -88,7 +88,7 @@ def scims():
         print(alignment)
 
     print("Getting scaffold lengths for {}".format(args.ref))
-    lengths = determine_chrom_lengths(args.ref)
+    lengths = determine_chrom_lengths(args.ref, args.scaffold)
 
     if args.scaffold:
         scaffolds = read_scaffold_names(args.scaffold)
