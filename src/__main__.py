@@ -90,7 +90,7 @@ def scims():
     if args.scaffold:
         scaffolds = read_scaffold_names(args.scaffold)
         print("Getting scaffold lengths for {}".format(args.ref))
-        lengths = determine_chrom_lengths(args.ref, args.scaffold)
+        lengths = determine_chrom_lengths(args.ref, scaffolds)
         print("Extracting propper alignments:")
         counts = count_chrom_alignments(alignment, scaffolds)
 
