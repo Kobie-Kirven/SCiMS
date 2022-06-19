@@ -182,10 +182,31 @@ def read_scaffold_names(scaffolds_file):
     with open(scaffolds_file) as fn:
         lines = fn.readlines()
         for line in lines:
-            scaffold_list.append(line[1:].strip("\n"))
+            if line.startswith(">"):
+                scaffold_list.append(line[1:].strip("\n"))
+            else:
+                scaffold_list.append(line.strip("\n"))
     return scaffold_list
 
-def determine_chrom_lengths(reference_genome, scaffold_list):
+def read_scaffold_lengths(scaffolds_file_lengths):
+    """
+    Read the lengths of the scaffolds from a file
+
+    Parameters:
+        scaffolds_file_lengths (str): Path to file containing scaffold lengths
+
+    Returns:
+        chrom_lengths_dict (dict): Dictionary of scaffold lengths
+    """
+    chrom_lengths_dict = {}
+    with open(scaffolds_file_lengths) as fn:
+        lines = fn.readlines()
+        for line in lines:
+            line = line.split("\t")
+            chrom_lengths_dict[line[0]] = int(line[1])
+    return chrom_lengths_dict
+    
+def determine_chrom_lengths(reference_genome, scaffold_list=None):
     """
     Compute the lengths of the chromosome scaffolds
 
@@ -193,13 +214,22 @@ def determine_chrom_lengths(reference_genome, scaffold_list):
         reference_genome (str): path to the reference genome
 
     Returns:
-        chrom_lengths(dict): Scaffold names are keys and values are scaffold lenghts
+        chrom_lengths(dict): Scaffold names are keys and values are scaffold lengths
     """
     chrom_lengths = {}
+
+    # If the reference genome is gzipped, open it as a gzip file
     if reference_genome[-3:]==".gz":
         with gzip.open(reference_genome, "rt") as handle:
             for record in SeqIO.parse(handle, "fasta"):
-                if record.id in scaffold_list:
+                if scaffold_list is None:
+                    count = 0
+                    for let in str(record.seq):
+                        if let != "N":
+                            count += 1
+                    chrom_lengths[record.id] = count
+
+                elif record.id in scaffold_list:
                     count = 0
                     for let in str(record.seq):
                         if let != "N":
@@ -207,7 +237,13 @@ def determine_chrom_lengths(reference_genome, scaffold_list):
                     chrom_lengths[record.id] = count
     else:
         for record in SeqIO.parse(reference_genome, "fasta"):
-            if record.id in scaffold_list:
+            if scaffold_list is None:
+                count = 0
+                for let in str(record.seq):
+                    if let != "N":
+                        count += 1
+                chrom_lengths[record.id] = count
+            elif record.id in scaffold_list:
                 count = 0
                 for let in str(record.seq):
                     if let != "N":
