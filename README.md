@@ -76,7 +76,6 @@ This tutorial is intended to ensure that your SCiMS installation is working corr
    wget https://github.com/Kobie-Kirven/SCiMS/raw/main/test_data/scaffold_lengths.txt
    wget https://github.com/Kobie-Kirven/SCiMS/raw/main/test_data/scaffolds.txt
    ```
-   ```
 5. Run SCiMS in alignment-free mode:
    ```text
    scims_test]$ scims --scaffold-names scaffolds.txt --x NC_000023.11 --y NC_000024.10 --o test --t 1 --from-sam male_test.sam --scaffold-lengths scaffold_lengths.txt
