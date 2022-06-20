@@ -89,3 +89,35 @@ This tutorial is intended to ensure that your SCiMS installation is working corr
    The average NC_000024.10:NC_000023.11 ratio for the file was 0.5285776962795797
    ```
    <img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/test.png" width="300">
+
+### Preform alignment first 
+1. Download sequence files 
+```text
+wget https://github.com/Kobie-Kirven/SCiMS/raw/main/test_data/female_10000_1.fa
+wget https://github.com/Kobie-Kirven/SCiMS/raw/main/test_data/female_10000_2.fa
+```
+
+2. Download reference genome
+```text
+wget https://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh38_latest/refseq_identifiers/GRCh38_latest_genomic.fna.gz
+```
+3. Build the Bowtie2 index
+```text
+bowtie2-build GRCh38_latest_genomic.fna.gz GRCh38_latest_genomic.fna.gz
+```
+
+5. Run SCiMS in alignment-free mode:
+   ```text
+   scims --scaffold-names scaffolds.txt --x NC_000023.11 --y NC_000024.10 --o test --t 1 -1 female_10000_1.fa -2 female_10000_2.fa --scaffold-lengths scaffold_lengths.txt --bowtie-index GRCh38_latest_genomic.fna.gz
+   ```
+
+6. You should see output similar to the following:
+   ```text
+   Aligning sequences to GRCh38_latest_genomic.fna.gz:
+   Forward reads: female_10000_1.fa
+   Reverse reads: female_10000_2.fa
+   Extracting propper alignments:
+         A total of 18552 alignments met the criteria
+   The average NC_000024.10:NC_000023.11 ratio for the file was 0.9519628016280371
+   ```
+   <img src="https://github.com/Kobie-Kirven/SCiMS/blob/main/docs/_static/test_1.png" width="300">
