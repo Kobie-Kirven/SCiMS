@@ -22,6 +22,6 @@ setuptools.setup(
     entry_points={"console_scripts": ["scims=src.__main__:scims",],},
     author="Kobie Kirven, Kyle McGovern",
     description="SCiMS: Sex Calling for Metagenomic Sequences",
-    install_requires=["setuptools", "biopython", "pandas"],
+    install_requires=["setuptools", "biopython", "pandas", "pysam"],
     python_requires=">=3.5",
 )
