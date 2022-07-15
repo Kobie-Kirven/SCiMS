@@ -1,22 +1,29 @@
-# Author: Kobie Kirven, Kyle McGovern
+# #############################################################################
+# Author: Kobie Kirven
 # Davenport Lab - Pennsylvania State University
 # Date: 9-2-2021
+###############################################################################
 
 # Imports
-from cmath import e
 import os
 from Bio import SeqIO
 from .sam_files import *
 import subprocess
-import pandas as pd
 import numpy as np
 import tempfile
 import gzip
 import matplotlib.pyplot as plt
-from scipy import stats as st
 import pysam
 
 files_list = []
+
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
+
+class WrongFile(Error):
+    """Raised when the input value is too small"""
+    pass
 
 
 def temp_files_list(file_name):
@@ -32,7 +39,6 @@ def temp_files_list(file_name):
     else:
         files_list.append(file_name)
 
-
 def delete_temp_file_list():
     """
     Delete the list of temporary files
@@ -42,7 +48,6 @@ def delete_temp_file_list():
             os.unlink(file)
     finally:
         pass
-
 
 def check_index_files(endings, index):
     """
@@ -71,30 +76,6 @@ def check_index_files(endings, index):
         return True
     else:
         return False
-
-def verify_sam_file(sam_file):
-    """
-    Verify that the SAM file is valid
-
-    Parameters:
-        sam_file (str): Path to SAM file
-
-    Returns:
-        (bool): Whether the SAM file is valid or not
-    """
-    with open(sam_file) as fn:
-        flag = False
-        for line in fn:
-            if line.startswith("@"):
-                continue
-            else:
-                flag = True
-                if len(line.split("\t")) >= 11:
-                    return True
-                else:
-                    return False
-        return flag
-
 
 def paired_reads_with_bowtie2(
         index, forward_reads, reverse_reads, method, threads=1
@@ -181,17 +162,37 @@ def not_in_list(not_list, input_list):
 
 def build_chrom_window_coverage_dict(chrom_lengths_dict, window_size):
     """
-    Build a dictionary of the number of reads in each window of each chromosome
-
+    Build a dictionary that holds the number of bases that align to a 
+    particular window size
+    
+    Inputs:
+        - chrom_lengths_dict(dict): Dictionary of chromosome names and lengths
+        - window_size(int): The size of the window of interest 
     Returns:
-        chrom_window_coverage_dict (dict):
+        - chrom_window_coverage_dict(dict): Keys are chromosome IDs and values
+                                            are lists of 0s
     """
     chrom_window_coverage_dict = {}
+
     for chrom in chrom_lengths_dict:
-        chrom_window_coverage_dict[chrom] = np.zeros((chrom_lengths_dict[chrom] // window_size)+1)
+        # Build list of zeros to hold the coverage
+        chrom_window_coverage_dict[chrom] = np.zeros((chrom_lengths_dict[chrom] // window_size))
     return chrom_window_coverage_dict
 
-def get_chrom_window_coverage(sam_file, chrom_lengths_dict, window_size, scaffold_list=None, bam=True):
+def get_align_handle(align_file):
+    """
+    Get the pysam handle for parsing
+    """
+    try:
+        handle = pysam.AlignmentFile(align_file, "rb", require_index=False)
+    except:
+        try:
+            handle = pysam.AlignmentFile(align_file, "r", require_index=False)
+        finally:
+            raise WrongFile("Yo")
+    return handle
+
+def get_chrom_window_coverage(sam_file, chrom_lengths_dict, window_size, scaffold_list=None):
     """
     Get the number of reads in each window of each chromosome
 
@@ -207,10 +208,6 @@ def get_chrom_window_coverage(sam_file, chrom_lengths_dict, window_size, scaffol
         chrom_lengths_dict, window_size
     )
 
-    if bam==True:
-        sam_file = pysam.AlignmentFile(sam_file, "rb", require_index=False)
-    else:
-        sam_file = pysam.AlignmentFile(sam_file, "r", require_index=False)
 
     for rec in sam_file:
         if not_in_list(["SECONDARY", "UNMAP", "MUNMAP", "SUPPLEMENTARY"], decompose_sam_flag(rec.flag)) == True:
